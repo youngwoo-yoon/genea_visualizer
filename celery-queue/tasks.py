@@ -13,6 +13,7 @@ import requests
 import tempfile
 from pyvirtualdisplay import Display
 from bvh import Bvh
+import time
 
 Display().start()
 
@@ -22,92 +23,114 @@ logger = get_task_logger(__name__)
 
 WORKER_TIMEOUT = int(os.environ["WORKER_TIMEOUT"])
 celery = Celery(
-    "tasks",
-    broker=os.environ["CELERY_BROKER_URL"],
-    backend=os.environ["CELERY_RESULT_BACKEND"],
+	"tasks",
+	broker=os.environ["CELERY_BROKER_URL"],
+	backend=os.environ["CELERY_RESULT_BACKEND"],
 )
 
-
 class TaskFailure(Exception):
-    pass
+	pass
 
 
 def validate_bvh_file(bvh_file):
-    MAX_NUMBER_FRAMES = int(os.environ["MAX_NUMBER_FRAMES"])
-    FRAME_TIME = 1.0 / float(os.environ["RENDER_FPS"])
+	MAX_NUMBER_FRAMES = int(os.environ["MAX_NUMBER_FRAMES"])
+	FRAME_TIME = 1.0 / float(os.environ["RENDER_FPS"])
 
-    file_content = bvh_file.decode("utf-8")
-    mocap = Bvh(file_content)
-    counter = None
-    for line in file_content.split("\n"):
-        if counter is not None and line.strip():
-            counter += 1
-        if line.strip() == "MOTION":
-            counter = -2
+	file_content = bvh_file.decode("utf-8")
+	mocap = Bvh(file_content)
+	counter = None
+	for line in file_content.split("\n"):
+		if counter is not None and line.strip():
+			counter += 1
+		if line.strip() == "MOTION":
+			counter = -2
 
-    if mocap.nframes != counter:
-        raise TaskFailure(
-            f"The number of rows with motion data ({counter}) does not match the Frames field ({mocap.nframes})"
-        )
+	if mocap.nframes != counter:
+		raise TaskFailure(
+			f"The number of rows with motion data ({counter}) does not match the Frames field ({mocap.nframes})"
+		)
 
-    if MAX_NUMBER_FRAMES != -1 and mocap.nframes > MAX_NUMBER_FRAMES:
-        raise TaskFailure(
-            f"The supplied number of frames ({mocap.nframes}) is bigger than {MAX_NUMBER_FRAMES}"
-        )
+	if MAX_NUMBER_FRAMES != -1 and mocap.nframes > MAX_NUMBER_FRAMES:
+		raise TaskFailure(
+			f"The supplied number of frames ({mocap.nframes}) is bigger than {MAX_NUMBER_FRAMES}"
+		)
 
-    if mocap.frame_time != FRAME_TIME:
-        raise TaskFailure(
-            f"The supplied frame time ({mocap.frame_time}) differs from the required {FRAME_TIME}"
-        )
+	# if mocap.frame_time != FRAME_TIME:
+		# raise TaskFailure(
+			# f"The supplied frame time ({mocap.frame_time}) differs from the required {FRAME_TIME}"
+		# )
 
 
 @celery.task(name="tasks.render", bind=True, hard_time_limit=WORKER_TIMEOUT)
-def render(self, bvh_file_uri: str) -> str:
-    HEADERS = {"Authorization": f"Bearer " + os.environ["SYSTEM_TOKEN"]}
-    API_SERVER = os.environ["API_SERVER"]
+def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> str:
+	HEADERS = {"Authorization": f"Bearer " + os.environ["SYSTEM_TOKEN"]}
+	API_SERVER = os.environ["API_SERVER"]
 
-    logger.info("rendering..")
-    self.update_state(state="PROCESSING")
+	logger.info("rendering..")
+	self.update_state(state="PROCESSING")
 
-    bvh_file = requests.get(API_SERVER + bvh_file_uri, headers=HEADERS).content
-    validate_bvh_file(bvh_file)
+	audio_file = requests.get(API_SERVER + audio_file_uri, headers=HEADERS).content if audio_file_uri is not None else None
+	bvh_file = requests.get(API_SERVER + bvh_file_uri, headers=HEADERS).content
+	validate_bvh_file(bvh_file)
+	
+	def call_blender_process(script_args):
+		process = subprocess.Popen(
+			[
+				"/blender/blender-2.83.0-linux64/blender",
+				"-b",
+				"--python",
+				"blender_render.py",
+				"--",
+			] + script_args,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE,
+		)
+		
+		total = None
+		current_frame = None
+		for line in process.stdout:
+			print(line)
+			line = line.decode("utf-8").strip()
+			if line.startswith("total_frames "):
+				_, total = line.split(" ")
+				total = int(float(total))
+			elif line.startswith("Append frame "):
+				*_, current_frame = line.split(" ")
+				current_frame = int(current_frame)
+			elif line.startswith("output_file"):
+				_, file_name = line.split(" ")
+				files = {"file": (os.path.basename(file_name), open(file_name, "rb"))}
+				return requests.post(
+					API_SERVER + "/upload_video", files=files, headers=HEADERS
+				).text
+			if total and current_frame:
+				self.update_state(
+					state="RENDERING", meta={"current": current_frame, "total": total}
+				)
+		if process.returncode != 0:
+			raise TaskFailure(process.stderr.read().decode("utf-8"))
+	
+	with tempfile.NamedTemporaryFile(suffix=".bvh") as tmp_bvh:
+		tmp_bvh.write(bvh_file)
+		tmp_bvh.seek(0)
 
-    with tempfile.NamedTemporaryFile(suffix=".bhv") as tmpf:
-        tmpf.write(bvh_file)
-        tmpf.seek(0)
-
-        process = subprocess.Popen(
-            [
-                "/blender/blender-2.83.0-linux64/blender",
-                "-noaudio",
-                "-b",
-                "--python",
-                "blender_render.py",
-                "--",
-                tmpf.name,
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        total = None
-        current_frame = None
-        for line in process.stdout:
-            line = line.decode("utf-8").strip()
-            if line.startswith("total_frames "):
-                _, total = line.split(" ")
-                total = int(float(total))
-            elif line.startswith("Append frame "):
-                *_, current_frame = line.split(" ")
-                current_frame = int(current_frame)
-            elif line.startswith("output_file"):
-                _, file_name = line.split(" ")
-                files = {"file": (os.path.basename(file_name), open(file_name, "rb"))}
-                return requests.post(
-                    API_SERVER + "/upload_video", files=files, headers=HEADERS
-                ).text
-            if total and current_frame:
-                self.update_state(
-                    state="RENDERING", meta={"current": current_frame, "total": total}
-                )
-        if process.returncode != 0:
-            raise TaskFailure(process.stderr.read().decode("utf-8"))
+		script_args = []
+		script_args.append('--input')
+		script_args.append(tmp_bvh.name)
+		script_args.append('--duration')
+		script_args.append(os.environ["RENDER_DURATION_FRAMES"])
+		script_args.append('--video') # enable recording of video
+		if rotate_flag is not None:
+			script_args.append('--rotate')
+			script_args.append(rotate_flag)
+		
+		if audio_file:
+			with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_wav:
+				tmp_wav.write(audio_file)
+				tmp_wav.seek(0)
+				
+				script_args.append('--input-audio')
+				script_args.append(tmp_wav.name)
+				return call_blender_process(script_args)
+		else:
+			return call_blender_process(script_args)
