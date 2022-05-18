@@ -1,4 +1,4 @@
-# GENEA 2020 BVH Visualizer
+# GENEA 2022 BVH Visualizer
 <p align="center">
   <img src="gesture.gif" alt="example from visualization server">
   <br>
@@ -6,11 +6,12 @@
 </p>
 
 
-This repository provides scripts that can be used to visualize BVH files. These scripts were developed for the [GENEA Challenge 2020](https://genea-workshop.github.io/2020/#gesture-generation-challenge), and enables reproducing the visualizations used for the challenge stimuli.
+This repository provides scripts that can be used to visualize BVH files (with optional audio). These scripts were developed for the [GENEA Challenge 2022](https://genea-workshop.github.io/2022/), and enables reproducing the visualizations used for the challenge stimuli.
+The system integrates Docker and Blender to provide a free and easy-to-use solution across all Docker-compatible platforms.
 The server consists of several containers which are launched together with the docker-compose command described below.
 The components are:
-* web: this is the HTTP server which receives render requests and places them on a "celery" queue to be processed.
-* worker: this takes jobs from the "celery" queue and works on them. Each worker runs one Blender process, so increasing the amount of workers adds more parallelization. 
+* web: this is an HTTP server which receives render requests and places them on a "celery" queue to be processed.
+* worker: this takes jobs from the "celery" queue and works on them. Each worker runs one Blender process, so increasing the amount of workers adds more parallelization
 * monitor: this is a monitoring tool for celery. Default username is `user` and password is `password` (can be changed by setting `FLOWER_USER` and `FLOWER_PWD` when starting the docker-compose command)
 * redis: needed for celery
 
@@ -28,7 +29,7 @@ In order to run several (for example 3) workers (Blender renderers, which allows
 The `-d` flag can also be passed in order to run the server in the background. Logs can then be accessed by running `docker-compose logs -f`. Additionally it's possible to rebuild just the worker or API containers with minimal disruption in the running server by running for example `docker-compose up -d --no-deps --scale worker=2 --build worker`. This will rebuild the worker container and stop the old ones and start 2 new ones.
 
 ## Use the visualization server
-The server is HTTP-based and works by uploading a bvh file. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished you will receive a URL to a video file that you can download. 
+The server is HTTP-based and works by uploading a bvh file (and optionally audio). You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished you will receive a URL to a video file that you can download. 
 Below are some examples using `curl` and in the file `example.py` there is a full python (3.7) example of how this can be used.
 
 Since the server is available publicly online, a simple authentication system is included – just pass in the token `j7HgTkwt24yKWfHPpFG3eoydJK6syAsz` with each request. This can be changed by modifying `USER_TOKEN` in `.env`.
