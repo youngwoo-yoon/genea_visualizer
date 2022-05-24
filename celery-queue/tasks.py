@@ -89,7 +89,7 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		total = None
 		current_frame = None
 		for line in process.stdout:
-			print(line)
+			# print(line) # use this to print Blender's output in the Docker-running terminal
 			line = line.decode("utf-8").strip()
 			if line.startswith("total_frames "):
 				_, total = line.split(" ")

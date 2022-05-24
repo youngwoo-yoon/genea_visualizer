@@ -48,7 +48,7 @@ def setup_scene(cam_pos, cam_rot):
 	plane_obj.data.materials.append(mat) #add the material to the object
 	
 	# Back Wall
-	bpy.ops.mesh.primitive_plane_add(size=20, location=[-250, 0, 0], rotation=[0, 1.570796, 0])
+	bpy.ops.mesh.primitive_plane_add(size=20, location=[0, 1, 0], rotation=[0, math.radians(90), math.radians(90)])
 	plane1_obj = bpy.data.objects['Plane']
 	plane1_obj.name = 'Wall_Back'
 	plane1_obj.scale = [100, 100, 100]
@@ -70,16 +70,16 @@ def load_bvh(filepath, turn, zerofy=False):
 	print("Turn flag: ", turn)
 	if turn == 'default':
 		bpy.ops.import_anim.bvh(filepath=filepath, axis_forward="-Z", use_fps_scale=False,
-		update_scene_fps=True, update_scene_duration=True)
+		update_scene_fps=True, update_scene_duration=True, global_scale=0.01)
 	elif turn == 'ccw':
 		bpy.ops.import_anim.bvh(filepath=filepath, axis_forward="-X", use_fps_scale=False,
-		update_scene_fps=True, update_scene_duration=True)
+		update_scene_fps=True, update_scene_duration=True, global_scale=0.01)
 	elif turn == 'cw':
 		bpy.ops.import_anim.bvh(filepath=filepath, axis_forward="X", use_fps_scale=False,
-		update_scene_fps=True, update_scene_duration=True)
+		update_scene_fps=True, update_scene_duration=True, global_scale=0.01)
 	elif turn == 'flip':
 		bpy.ops.import_anim.bvh(filepath=filepath, axis_forward="Z", use_fps_scale=False,
-		update_scene_fps=True, update_scene_duration=True)
+		update_scene_fps=True, update_scene_duration=True, global_scale=0.01)
 	else:
 		raise NotImplementedError('Turn flag "{}" is not implemented.'.format(turn))
 		
@@ -126,7 +126,7 @@ def constraintBoneTargets(armature = 'Armature', rig = 'None'):
 		for c in bone.constraints:
 			bone.constraints.remove( c )
 		# Create body_world location to fix floating legs
-		if bone.name == 'body_world':
+		if bone.name == 'body_world' and os.environ["VISUALIZATION_MODE"] != "1":
 			constraint = bone.constraints.new('COPY_LOCATION')
 			constraint.target = bpy.context.scene.objects[rig]
 			temp = bone.name.replace('BVH:','')
@@ -166,6 +166,7 @@ def render_video(output_dir, picture, video, bvh_fname, render_frame_start, rend
 		bpy.ops.render.render(write_still=True)
 		
 	if video:
+		print(f"total_frames {render_frame_length}", flush=True)
 		bpy.context.scene.render.image_settings.file_format='FFMPEG'
 		bpy.context.scene.render.ffmpeg.format='MPEG4'
 		bpy.context.scene.render.ffmpeg.codec = "H264"
@@ -191,11 +192,13 @@ def parse_args():
 
 def main():
 	args = parse_args()
+	if os.environ["VISUALIZATION_MODE"] not in ["0", "1"]:
+		raise NotImplementedError("This visualization mode is not supported ({})!".format(os.environ["VISUALIZATION_MODE"]))
 	
 	# FBX file
 	curr_script_path = os.path.dirname(os.path.realpath(__file__))
 	output_dir = os.path.join(curr_script_path, 'output')
-	FBX_MODEL = os.path.join(curr_script_path, 'model', "GenevaModel_v2_Tpose_Final_scaled.fbx")
+	FBX_MODEL = os.path.join(curr_script_path, 'model', "GenevaModel_v2_Tpose_Final.fbx")
 	tmp_dir = Path(tempfile.mkdtemp()) / "video"	
 	BVH_NAME = os.path.basename(str(args['input'])).replace('.bvh','')
 
@@ -207,8 +210,9 @@ def main():
 	load_bvh(str(args['input']), args['rotate'], zerofy=True)
 	constraintBoneTargets(rig = BVH_NAME)
 
-	CAM_POS = [280, 0, 120]
-	CAM_ROT = [math.radians(90), 0, math.radians(90)]
+	if os.environ["VISUALIZATION_MODE"] == "0":		CAM_POS = [0, -3, 1.1]
+	elif os.environ["VISUALIZATION_MODE"] == "1":	CAM_POS = [0, -2.75, 1.25]
+	CAM_ROT = [math.radians(90), 0, 0]
 	setup_scene(CAM_POS, CAM_ROT)
 
 	print(bpy.context.scene.frame_start)
@@ -217,7 +221,9 @@ def main():
 	
 	if args['input_audio']:
 		load_audio(str(args['input_audio']))
-	render_video(str(tmp_dir), args['png'], args['video'], BVH_NAME, args['start'], args['duration'])
+	
+	total_frames = bpy.data.objects[BVH_NAME].animation_data.action.frame_range.y
+	render_video(str(tmp_dir), args['png'], args['video'], BVH_NAME, args['start'], min(args['duration'], total_frames))
 
 	end = time.time()
 	all_time = end - start

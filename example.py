@@ -58,11 +58,12 @@ while not done:
 	elif response["state"] == "RENDERING":
 		current = response["result"]["current"]
 		total = response["result"]["total"]
-		print(f"currently rendering, {current}/{total} done")
+		print(f"Rendering BVH: {int(current/total*100)}% done ({current}/{total} frames)")
 
 	elif response["state"] == "SUCCESS":
 		file_url = response["result"]
 		done = True
+		print("Done!")
 		break
 
 	elif response["state"] == "FAILURE":
