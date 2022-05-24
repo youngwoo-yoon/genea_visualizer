@@ -15,12 +15,16 @@ The components are:
 * monitor: this is a monitoring tool for celery. Default username is `user` and password is `password` (can be changed by setting `FLOWER_USER` and `FLOWER_PWD` when starting the docker-compose command)
 * redis: needed for celery
 
+## Important notes
+1. The visualizer currently does not support systems with an ARM architecture (like Mac M1). The issue stems from an ongoing [bug in QEMU](https://gitlab.com/qemu-project/qemu/-/issues/750), an emulation engine integrated into Docker, which messes with one of Blender's libraries.
+2. You must install *Docker 20.10.14* (or later) on your machine
+3. If you encounter any technical issues with the server or visualizer, please check the Issues in the repository and open a new one if it does not exist. I will do my best to address it as soon as possible :)
 
 ## Build and start visualization server
 First you need to install docker-compose:
 `sudo apt  install docker-compose` (on Ubuntu)
 
-You might want to edit some of the default parameters, such as render resolution and fps, in the `.env` file.
+You might want to edit some of the default parameters, such as render resolution and fps, in the `.env` file. The variable `VISUALIZATION_MODE` switches between upper body and full body camera modes, by setting its value to 0 and 1 respectively.
 
 Then to start the server run `docker-compose up --build`
 
@@ -52,25 +56,5 @@ will return a URI to the current job `/jobid/[JOB_ID]`.
 
 In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" http://SERVER_URL/[FILE_URL] -o result.mp4`. Please note that the server will delete the file after you retrieve it, so you can only retrieve it once!
 
-## Replicating the GENEA Challenge 2020 visualizations
-The parameters in the enclosed file `docker-compose-genea.yml` correspond to those that were used to render the final evaluation stimuli of the GENEA Challenge, for ease of replication.
-
-### If you use this code in your research please cite our IUI article:
-```
-@inproceedings{kucherenko2021large,
-  author = {Kucherenko, Taras and Jonell, Patrik and Yoon, Youngwoo and Wolfert, Pieter and Henter, Gustav Eje},
-  title = {A Large, Crowdsourced Evaluation of Gesture Generation Systems on Common Data: {T}he {GENEA} {C}hallenge 2020},
-  year = {2021},
-  isbn = {9781450380171},
-  publisher = {Association for Computing Machinery},
-  address = {New York, NY, USA},
-  url = {https://doi.org/10.1145/3397481.3450692},
-  doi = {10.1145/3397481.3450692},
-  booktitle = {26th International Conference on Intelligent User Interfaces},
-  pages = {11--21},
-  numpages = {11},
-  keywords = {evaluation paradigms, conversational agents, gesture generation},
-  location = {College Station, TX, USA},
-  series = {IUI '21}
-}
-```
+## Replicating the GENEA Challenge 2022 visualizations
+The parameters in the enclosed `.env` file correspond to the those used for rendering the final evaluation stimuli of the GENEA Challenge, for ease of replication. As long as you clone this repo, build it using Docker, and input the BVH files used for the final visualization, you should be able to reproduce the results.

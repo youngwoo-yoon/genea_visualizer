@@ -84,16 +84,23 @@ def load_bvh(filepath, turn, zerofy=False):
 		raise NotImplementedError('Turn flag "{}" is not implemented.'.format(turn))
 		
 	if zerofy:
-		bpy.ops.object.mode_set(mode='EDIT')
-		bpy.ops.armature.select_all(action='SELECT')
-		bone = bpy.context.selected_editable_bones[0]
-		bpy.ops.armature.select_all(action='DESELECT')
-		bone.select_head = True
-		bpy.context.scene.cursor.location = bone.head
-		bpy.ops.object.mode_set(mode='OBJECT')
-		bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
-		bpy.context.object.location = [0, 0, 0]
-		bpy.context.scene.cursor.location = [0, 0, 0]
+		bpy.ops.object.mode_set(mode='POSE')
+		bpy.ops.pose.select_all(action='SELECT')
+		bone_pose = bpy.context.selected_pose_bones[0]
+		bpy.ops.pose.select_all(action='DESELECT')
+		bone_pose.bone.select = True
+		if bone_pose.location.to_tuple(2) == (0.0, 0.0, 0.0):
+			bpy.ops.object.mode_set(mode='OBJECT')
+			bpy.ops.object.mode_set(mode='EDIT')
+			bpy.ops.armature.select_all(action='SELECT')
+			bone = bpy.context.selected_editable_bones[0]
+			bpy.ops.armature.select_all(action='DESELECT')
+			bone.select_head = True
+			bpy.context.scene.cursor.location = bone.head
+			bpy.ops.object.mode_set(mode='OBJECT')
+			bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
+			bpy.context.object.location = [0, 0, 0]
+			bpy.context.scene.cursor.location = [0, 0, 0]
 
 def add_materials(work_dir):
 	mat = bpy.data.materials.new('gray')
