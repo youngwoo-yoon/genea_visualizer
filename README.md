@@ -1,6 +1,6 @@
 # GENEA 2022 BVH Visualizer
 <p align="center">
-  <img src="gesture.gif" alt="example from visualization server">
+  <img src="demo.gif" alt="example from visualization server">
   <br>
   <i>Example output from the visualization server</i>
 </p>
