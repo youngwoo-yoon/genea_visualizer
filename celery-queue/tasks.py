@@ -14,6 +14,7 @@ import tempfile
 from pyvirtualdisplay import Display
 from bvh import Bvh
 import time
+import ffmpeg
 
 Display().start()
 
@@ -35,6 +36,7 @@ class TaskFailure(Exception):
 def validate_bvh_file(bvh_file):
 	MAX_NUMBER_FRAMES = int(os.environ["MAX_NUMBER_FRAMES"])
 	FRAME_TIME = 1.0 / float(os.environ["RENDER_FPS"])
+	FRAME_EPSILON = 0.00001
 
 	file_content = bvh_file.decode("utf-8")
 	mocap = Bvh(file_content)
@@ -55,10 +57,10 @@ def validate_bvh_file(bvh_file):
 			f"The supplied number of frames ({mocap.nframes}) is bigger than {MAX_NUMBER_FRAMES}"
 		)
 
-	# if mocap.frame_time != FRAME_TIME:
-		# raise TaskFailure(
-			# f"The supplied frame time ({mocap.frame_time}) differs from the required {FRAME_TIME}"
-		# )
+	if mocap.frame_time < FRAME_TIME - FRAME_EPSILON or mocap.frame_time > FRAME_TIME + FRAME_EPSILON:
+		raise TaskFailure(
+			f"The supplied frame time ({mocap.frame_time}) differs from the required {FRAME_TIME} (+/- {FRAME_EPSILON})"
+		)
 
 
 @celery.task(name="tasks.render", bind=True, hard_time_limit=WORKER_TIMEOUT)
@@ -89,7 +91,7 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		total = None
 		current_frame = None
 		for line in process.stdout:
-			# print(line) # use this to print Blender's output in the Docker-running terminal
+			#print(line) # debug process prints
 			line = line.decode("utf-8").strip()
 			if line.startswith("total_frames "):
 				_, total = line.split(" ")
@@ -99,10 +101,7 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 				current_frame = int(current_frame)
 			elif line.startswith("output_file"):
 				_, file_name = line.split(" ")
-				files = {"file": (os.path.basename(file_name), open(file_name, "rb"))}
-				return requests.post(
-					API_SERVER + "/upload_video", files=files, headers=HEADERS
-				).text
+				return file_name
 			if total and current_frame:
 				self.update_state(
 					state="RENDERING", meta={"current": current_frame, "total": total}
@@ -110,27 +109,53 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		if process.returncode != 0:
 			raise TaskFailure(process.stderr.read().decode("utf-8"))
 	
+	def call_ffmpeg_process(video_file, audio_file, output_file):
+		if ".mp4" not in video_file:
+			raise TaskFailure("Only MP4 video stream is currently supported!")
+		if ".wav" not in audio_file:
+			raise TaskFailure("Only WAV audio stream is currently supported!")
+		
+		self.update_state(
+			state="COMBINING A/V"
+		)
+
+		# FFMPEG CMD ARGS --> ["ffmpeg", "-i", video_file, "-i", audio_file, "-c:v", "copy", "-c:a", "aac", "-map", "0:v:0", "-map", "1:a:0", "-shortest", output_file]
+		
+		v_stream = ffmpeg.input(video_file)['v']
+		a_stream = ffmpeg.input(audio_file)['a']
+		output_ffmpeg = ffmpeg.output(v_stream, a_stream, output_file, vcodec='copy', acodec='aac', **{'shortest': None, 'y': None})
+		ffmpeg_result = ffmpeg.run(output_ffmpeg, capture_stdout=True, capture_stderr=True)
+		if ffmpeg_result[0] != b'':
+			print("FFMPEG ERROR")
+			raise TaskFailure(ffmpeg_result[0].decode("utf-8"))
+		return output_file
+		
+	
+	output_file = None
 	with tempfile.NamedTemporaryFile(suffix=".bvh") as tmp_bvh:
 		tmp_bvh.write(bvh_file)
 		tmp_bvh.seek(0)
-
 		script_args = []
 		script_args.append('--input')
 		script_args.append(tmp_bvh.name)
 		script_args.append('--duration')
 		script_args.append(os.environ["RENDER_DURATION_FRAMES"])
-		script_args.append('--video') # enable recording of video
+		script_args.append('--video')
 		if rotate_flag is not None:
 			script_args.append('--rotate')
 			script_args.append(rotate_flag)
 		
+		output_file = call_blender_process(script_args)
 		if audio_file:
 			with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_wav:
 				tmp_wav.write(audio_file)
 				tmp_wav.seek(0)
-				
-				script_args.append('--input-audio')
-				script_args.append(tmp_wav.name)
-				return call_blender_process(script_args)
-		else:
-			return call_blender_process(script_args)
+				output_file = call_ffmpeg_process(output_file, tmp_wav.name, os.path.join(os.path.dirname(output_file),"combined_av.mp4"))
+
+	if output_file is None:
+		raise TaskFailure("Something went wrong... Not sure why.")
+		
+	files = {"file": (os.path.basename(output_file), open(output_file, "rb"))}
+	return requests.post(
+		API_SERVER + "/upload_video", files=files, headers=HEADERS
+	).text

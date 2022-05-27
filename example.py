@@ -60,6 +60,9 @@ while not done:
 		total = response["result"]["total"]
 		print(f"Rendering BVH: {int(current/total*100)}% done ({current}/{total} frames)")
 
+	elif response["state"] == "COMBINING A/V":
+		print(f"Combining audio with video. Your video will be ready soon!")
+
 	elif response["state"] == "SUCCESS":
 		file_url = response["result"]
 		done = True
@@ -71,7 +74,7 @@ while not done:
 	else:
 		print(response)
 		raise Exception("should not happen..")
-	time.sleep(10)
+	time.sleep(5)
 
 
 video = requests.get(server_url + file_url, headers=headers).content

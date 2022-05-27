@@ -221,10 +221,6 @@ def main():
 	elif os.environ["VISUALIZATION_MODE"] == "1":	CAM_POS = [0, -2.75, 1.25]
 	CAM_ROT = [math.radians(90), 0, 0]
 	setup_scene(CAM_POS, CAM_ROT)
-
-	print(bpy.context.scene.frame_start)
-	print(bpy.context.scene.frame_end)
-	# return
 	
 	if args['input_audio']:
 		load_audio(str(args['input_audio']))
