@@ -15,10 +15,12 @@ The components are:
 * monitor: this is a monitoring tool for celery. Default username is `user` and password is `password` (can be changed by setting `FLOWER_USER` and `FLOWER_PWD` when starting the docker-compose command)
 * redis: needed for celery
 
-## Important notes
+## Important notes / Requirements
 1. The visualizer currently does not support systems with an ARM architecture (like Mac M1). The issue stems from an ongoing [bug in QEMU](https://gitlab.com/qemu-project/qemu/-/issues/750), an emulation engine integrated into Docker, which messes with one of Blender's libraries.
-2. You must install *Docker 20.10.14* (or later) on your machine
-3. If you encounter any technical issues with the server or visualizer, please check the Issues in the repository and open a new one if it does not exist. I will do my best to address it as soon as possible :)
+2. You must install *Docker 20.10.14* (or later) on your machine.
+3. If passing an audio file with your HTTP request to the server, make sure the audio file is **equal or longer** than the video duration. The combining of video and audio streams uses the shortest stream, so a shorter audio will shorten the duration of the video.
+4. If you encounter any issues with the server or visualizer, please file an Issue in the repo. I will do my best to address it as soon as possible :)
+
 
 ## Build and start visualization server
 First you need to install docker-compose:
