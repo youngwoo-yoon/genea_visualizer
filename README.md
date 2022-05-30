@@ -28,7 +28,7 @@ The components are:
 First you need to install docker-compose:
 `sudo apt  install docker-compose` (on Ubuntu)
 
-You might want to edit some of the default parameters, such as render resolution and fps, in the `.env` file. The variable `VISUALIZATION_MODE` switches between upper body and full body camera modes, by setting its value to 0 and 1 respectively.
+You might want to edit some of the default parameters, such as render resolution and fps, in the `.env` file. The variable `VISUALIZATION_MODE` switches between "full body" (whole avatar visible, except for feet) and "upper body" (more zoomed in, with hips 3D position fixed) camera modes, when set to `0` and `1` respectively.
 
 Then to start the server run `docker-compose up --build`
 
