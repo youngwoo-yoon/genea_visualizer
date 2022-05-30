@@ -1,6 +1,5 @@
 FROM ubuntu:18.04
 
-
 ENV C_FORCE_ROOT true
 ENV DEBIAN_FRONTEND=noninteractive
 

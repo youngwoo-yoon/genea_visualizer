@@ -1,25 +1,34 @@
-# GENEA 2020 BVH Visualizer
+# GENEA 2022 BVH Visualizer
 <p align="center">
-  <img src="gesture.gif" alt="example from visualization server">
+  <img src="demo.gif" alt="example from visualization server">
   <br>
   <i>Example output from the visualization server</i>
 </p>
 
+This repository contains code that can be used to visualize BVH files (with optional audio) using Docker, Blender, and FFMPEG.
+The code was developed for the [GENEA Challenge 2022](https://genea-workshop.github.io/2022/), and enables reproducing the visualizations used for the challenge stimuli on most platforms.
+The system integrates Docker and Blender to provide a free and easy-to-use solution that requires as little manual setup as possible, in the form of a server that you can host yourself.
+Additionally, a Blender-ready release is provided, which contains scripts that can be used inside Blender through its user inerface, or by calling Blender through a command line interface.
 
-This repository provides scripts that can be used to visualize BVH files. These scripts were developed for the [GENEA Challenge 2020](https://genea-workshop.github.io/2020/#gesture-generation-challenge), and enables reproducing the visualizations used for the challenge stimuli.
-The server consists of several containers which are launched together with the docker-compose command described below.
+The Docker server consists of several containers which are launched together with the `docker-compose` command described below.
 The components are:
-* web: this is the HTTP server which receives render requests and places them on a "celery" queue to be processed.
-* worker: this takes jobs from the "celery" queue and works on them. Each worker runs one Blender process, so increasing the amount of workers adds more parallelization. 
+* web: this is an HTTP server which receives render requests and places them on a "celery" queue to be processed.
+* worker: this takes jobs from the "celery" queue and works on them. Each worker runs one Blender process, so increasing the amount of workers adds more parallelization
 * monitor: this is a monitoring tool for celery. Default username is `user` and password is `password` (can be changed by setting `FLOWER_USER` and `FLOWER_PWD` when starting the docker-compose command)
 * redis: needed for celery
+
+## Limitations
+1. The visualizer currently does not support systems with an ARM architecture (like Mac M1). The issue stems from an ongoing [bug in QEMU](https://gitlab.com/qemu-project/qemu/-/issues/750), an emulation engine integrated into Docker, which messes with one of Blender's libraries.
+2. You must install *Docker 20.10.14* (or later) on your machine.
+3. If passing an audio file with your HTTP request to the server, make sure the audio file is **equal or longer** than the video duration. The combining of video and audio streams uses the shortest stream, so a shorter audio will shorten the duration of the video.
+4. If you encounter any issues with the server or visualizer, please file an Issue in the repo. I will do my best to address it as soon as possible :)
 
 
 ## Build and start visualization server
 First you need to install docker-compose:
 `sudo apt  install docker-compose` (on Ubuntu)
 
-You might want to edit some of the default parameters, such as render resolution and fps, in the `.env` file.
+You might want to edit some of the default parameters, such as render resolution and fps, in the `.env` file. The variable `VISUALIZATION_MODE` switches between "full body" (whole avatar visible, except for feet) and "upper body" (more zoomed in, with hips 3D position fixed) camera modes, when set to `0` and `1` respectively.
 
 Then to start the server run `docker-compose up --build`
 
@@ -28,7 +37,7 @@ In order to run several (for example 3) workers (Blender renderers, which allows
 The `-d` flag can also be passed in order to run the server in the background. Logs can then be accessed by running `docker-compose logs -f`. Additionally it's possible to rebuild just the worker or API containers with minimal disruption in the running server by running for example `docker-compose up -d --no-deps --scale worker=2 --build worker`. This will rebuild the worker container and stop the old ones and start 2 new ones.
 
 ## Use the visualization server
-The server is HTTP-based and works by uploading a bvh file. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished you will receive a URL to a video file that you can download. 
+The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will receive a URL to a video file that you can download. 
 Below are some examples using `curl` and in the file `example.py` there is a full python (3.7) example of how this can be used.
 
 Since the server is available publicly online, a simple authentication system is included – just pass in the token `j7HgTkwt24yKWfHPpFG3eoydJK6syAsz` with each request. This can be changed by modifying `USER_TOKEN` in `.env`.
@@ -51,25 +60,5 @@ will return a URI to the current job `/jobid/[JOB_ID]`.
 
 In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" http://SERVER_URL/[FILE_URL] -o result.mp4`. Please note that the server will delete the file after you retrieve it, so you can only retrieve it once!
 
-## Replicating the GENEA Challenge 2020 visualizations
-The parameters in the enclosed file `docker-compose-genea.yml` correspond to those that were used to render the final evaluation stimuli of the GENEA Challenge, for ease of replication.
-
-### If you use this code in your research please cite our IUI article:
-```
-@inproceedings{kucherenko2021large,
-  author = {Kucherenko, Taras and Jonell, Patrik and Yoon, Youngwoo and Wolfert, Pieter and Henter, Gustav Eje},
-  title = {A Large, Crowdsourced Evaluation of Gesture Generation Systems on Common Data: {T}he {GENEA} {C}hallenge 2020},
-  year = {2021},
-  isbn = {9781450380171},
-  publisher = {Association for Computing Machinery},
-  address = {New York, NY, USA},
-  url = {https://doi.org/10.1145/3397481.3450692},
-  doi = {10.1145/3397481.3450692},
-  booktitle = {26th International Conference on Intelligent User Interfaces},
-  pages = {11--21},
-  numpages = {11},
-  keywords = {evaluation paradigms, conversational agents, gesture generation},
-  location = {College Station, TX, USA},
-  series = {IUI '21}
-}
-```
+## Replicating the GENEA Challenge 2022 visualizations
+The parameters in the enclosed `.env` file correspond to the those used for rendering the final evaluation stimuli of the GENEA Challenge, for ease of replication. As long as you clone this repo, build it using Docker, and input the BVH files used for the final visualization, you should be able to reproduce the results.
