@@ -1,10 +1,25 @@
-
 # GENEA 2022 BVH Visualizer
 <p align="center">
   <img src="demo.gif" alt="example from visualization server">
   <br>
   <i>Example output from the visualization server</i>
 </p>
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Server Solution](#server-solution)
+  * [Limitations](#limitations)
+  * [Build and start visualization server](#build-and-start-visualization-server)
+  * [Using the visualization server](#using-the-visualization-server)
+  * [example.py](#examplepy)
+- [Blender Script](#blender-script)
+  * [Using Blender UI](#using-blender-ui)
+  * [Using command line](#using-command-line)
+- [Replicating the GENEA Challenge 2022 visualizations](#replicating-the-genea-challenge-2022-visualizations)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+## Introduction
 
 This repository contains code that can be used to visualize BVH files (with optional audio) using Docker, Blender, and FFMPEG. The code was developed for the [GENEA Challenge 2022](https://genea-workshop.github.io/2022/), and enables reproducing the visualizations used for the challenge stimuli on most platforms. The system integrates Docker and Blender to provide a free and easy-to-use solution that requires as little manual setup as possible. Currently, we provide three interfaces that you can use to access the visualizations:
 
@@ -14,21 +29,13 @@ This repository contains code that can be used to visualize BVH files (with opti
 
 ## Server Solution
 
+*Most of the information below is needed to set up the server yourself. If you just want to use the GENEA-hosted server, go [here](#examplepy).*
+
 The Docker server consists of several containers which are launched together with the `docker-compose` command described below. The containers are:
 * web: this is an HTTP server which receives render requests and places them on a "celery" queue to be processed.
 * worker: this takes jobs from the "celery" queue and works on them. Each worker runs one Blender process, so increasing the amount of workers adds more parallelization
 * monitor: this is a monitoring tool for celery. Default username is `user` and password is `password` (can be changed by setting `FLOWER_USER` and `FLOWER_PWD` when starting the docker-compose command)
 * redis: needed for celery
-
-Most of the information below is intended for setting up your own server. For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps below have already been performed. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this:
-
-`python ./example.py <path to .BVH file> --audio_file <path tp .WAV file> --output <path to output .MP4 file> --server_url <IP where the server is hosted>`
-
-**To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this:
-
-`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" --audio_file "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" --output "C:\Users\Wolf\Documents\NN_Output\Visualizations\video.mp4" --server_url http://129.192.81.125`
-
-Note: The solution currently does not support the manual setting of number of frames to render from the client (i.e. `example.py`). Instead, make sure your BVH file is as long as you need it to, since this is what will get rendered by the server (capped at 2 minutes or 3600 frames).
 
 ### Limitations
 1. The visualizer currently **does not support ARM systems**, like Mac M1. The issue stems from an ongoing [bug in QEMU](https://gitlab.com/qemu-project/qemu/-/issues/750), an emulation engine integrated into Docker, which messes with one of Blender's libraries.
@@ -49,7 +56,7 @@ In order to run several (for example 3) workers (Blender renderers, which allows
 
 The `-d` flag can also be passed in order to run the server in the background. Logs can then be accessed by running `docker-compose logs -f`. Additionally it's possible to rebuild just the worker or API containers with minimal disruption in the running server by running for example `docker-compose up -d --no-deps --scale worker=2 --build worker`. This will rebuild the worker container and stop the old ones and start 2 new ones.
 
-### Use the visualization server
+### Using the visualization server
 The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will receive a URL to a video file that you can download. Below are some examples using `curl` and in the file `example.py` there is a full python (3.7) example of how this can be used.
 
 Since the server is available publicly online, a simple authentication system is included – just pass in the token `j7HgTkwt24yKWfHPpFG3eoydJK6syAsz` with each request. This can be changed by modifying `USER_TOKEN` in `.env`.
@@ -72,11 +79,24 @@ will return a URI to the current job `/jobid/[JOB_ID]`.
 
 In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" http://SERVER_URL/[FILE_URL] -o result.mp4`. Please note that the server will delete the file after you retrieve it, so you can only retrieve it once!
 
+### example.py
+
+For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this:
+
+`python ./example.py <path to .BVH file> --audio_file <path tp .WAV file> --output <path to output .MP4 file> --server_url <IP where the server is hosted>`
+
+**To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this:
+
+`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" --audio_file "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" --output "C:\Users\Wolf\Documents\NN_Output\Visualizations\video.mp4" --server_url http://129.192.81.125`
+
+Note that the solution currently does not support the manual setting of number of frames to render from the client (`example.py`). Instead, make sure your BVH file is as long as you need it to, since this is what will get rendered by the server (capped at 2 minutes or 3600 frames).
+
+
 ## Blender Script
 
 This repository provides a [minimal release](https://github.com/TeoNikolov/genea_visualizer/releases/tag/minimal-release-v1) of the GENEA visualization tool, in the form of a Blender script that you can use directly with Blender through the command line or Blender's user interface. This release is useful if you have Blender installed on your system and you want to play around with the visualizer. Note that while the release should  behave the same as the final visualizer (i.e. the one used during evaluation), **it is possible that some of the code, or default settings, change** over the next few months. Because the maintenance of this script is lower priority, you might prefer to use the server-based solution (either GENEA-hosted or self-hosted) to avoid potentially outdated code.
 
-### Using the script
+### Using Blender UI
 
 1. Make sure you have `Blender 2.93.9` (other versions may work, but this is not guaranteed).
 2. Extract the .zip contents to a directory of your choice.
@@ -86,7 +106,7 @@ This repository provides a [minimal release](https://github.com/TeoNikolov/genea
 6. When ready, run the script by pressing the "play" button at the top to render the scene (this can take a while, so try with fewer frames first).
 7. The rendered video will be output to the `output` directory, next to the script file.
 
-### Command line
+### Using command line
 It is likely that your machine learning pipeline outputs a bunch of BVH and WAV files, such as during hyperparameter optimization. Instead of processing each BVH/WAV file pair separately through Blender's UI yourself, call Blender with [command line arguments](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html) like this:
 
 `"<path to Blender executable>" -b --python "<path to Blender .py script>" -- --input "<path to BVH file>" --input_audio "<path to WAV file>" --video`
