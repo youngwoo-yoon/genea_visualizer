@@ -9,15 +9,17 @@ import requests
 from pathlib import Path
 import time
 import json
+import os
 
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("bvh_file", type=Path)
+parser.add_argument('bvh_file', type=Path)
 # parser.add_argument("--server_url", default="http://129.192.81.125:80")
-parser.add_argument("--server_url", default="http://localhost:5001")
-parser.add_argument("--audio_file", help="The filepath to a chosen .wav audio file.", type=Path)
-parser.add_argument("--rotate", help='Set to "cw" to rotate avatar 90 degrees clockwise, "ccw" for 90 degrees counter-clockwise, "flip" for 180-degree rotation, and leave at "default" for no rotation (or ignore the flag).',type=str, choices=['default', 'cw', 'ccw', 'flip'], default='default')
+parser.add_argument('-s', '--server_url', default="http://localhost:5001")
+parser.add_argument('-a', '--audio_file', help="The filepath to a chosen .wav audio file.", type=Path)
+parser.add_argument('-r', '--rotate', help='Set to "cw" to rotate avatar 90 degrees clockwise, "ccw" for 90 degrees counter-clockwise, "flip" for 180-degree rotation, and leave at "default" for no rotation (or ignore the flag).',type=str, choices=['default', 'cw', 'ccw', 'flip'], default='default')
+parser.add_argument('-o', '--output_dir', help='Output directory where the rendered video files will be saved to. Will use "<script directory/output/" if not specified.', type=Path)
 
 args = parser.parse_args()
 
@@ -78,8 +80,9 @@ while not done:
 		raise Exception("should not happen..")
 	time.sleep(5)
 
-output_file_1 = Path(str(bvh_file.stem) + '_UB').with_suffix(".mp4")
-output_file_2 = Path(str(bvh_file.stem) + '_FB').with_suffix(".mp4")
+output_dir = args.output_dir.resolve() if args.output_dir is not None else Path(os.path.realpath(__file__)).parents[0] / "output"
+output_file_1 = output_dir / Path(str(bvh_file.stem) + '_UB').with_suffix(".mp4")
+output_file_2 = output_dir / Path(str(bvh_file.stem) + '_FB').with_suffix(".mp4")
 video_1 = requests.get(server_url + file_url_1, headers=headers).content
 video_2 = requests.get(server_url + file_url_2, headers=headers).content
 output_file_1.write_bytes(video_1)

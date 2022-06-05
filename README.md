@@ -80,6 +80,7 @@ will return a URI to the current job `/jobid/[JOB_ID]`.
 * `{result": {"jobs_in_queue": X}, "state": "PENDING"}`: Which means the job is in the queue and waiting to be rendered. The `jobs_in_queue` property is the total number of jobs waiting to be executed. The order of job execution is not guaranteed, which means that this number does not reflect how many jobs there are before the current job, but rather reflects if the server is currently busy or not.
 * `{result": null, "state": "PROCESSING"}`: The job is currently being processed. Depending on the file size this might take a while, but this acknowledges that the server has started to working on the request.
 * `{result":{"current": X, "total": Y}, "state": "RENDERING"}`: The job is currently being rendered, this is the last stage of the process. `current` shows which is the last rendered frame and `total` shows how many frames in total this job will render.
+* `{result": null, "state": "COMBINING A/V"}`: The job is currently combining video and audio streams. This can occur only if an audio file was passed to the server alongside the BVH file.
 * `{"result": FILE_URL, "state": "SUCCESS"}`: The job ended successfully and the video is available at `http://SERVER_URL/[FILE_URL]`.
 * `{"result": ERROR_MSG, "state": "FAILURE"}`: The job ended with a failure and the error message is given in `results`.
 
@@ -89,16 +90,13 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this:
 
-`python ./example.py <path to .BVH file> --audio_file <path tp .WAV file> --server_url <IP where the server is hosted>`
-
-The output video files will be stored in the same folder as the script.
+`python ./example.py <path to .BVH file> --audio_file <path tp .WAV file> --output <path to save videos to> --server_url <IP where the server is hosted>`
 
 **To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this:
 
-`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" --audio_file "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" --output "C:\Users\Wolf\Documents\NN_Output\Visualizations\video.mp4" --server_url http://129.192.81.125`
+`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" --audio_file "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" --output "C:\Users\Wolf\Documents\NN_Output\Rendered\" --server_url http://129.192.81.125`
 
-Note that the solution currently does not support the manual setting of number of frames to render from the client (`example.py`). Instead, make sure your BVH file is as long as you need it to, since this is what will get rendered by the server (capped at 2 minutes or 3600 frames).
-
+Note: The solution currently does not support the manual setting of number of frames to render from the client (`example.py`). Instead, make sure your BVH file is as long as you need it to, since this is what will get rendered by the server (capped at 2 minutes or 3600 frames).
 
 ## Blender Script
 
@@ -121,9 +119,9 @@ It is likely that your machine learning pipeline outputs a bunch of BVH and WAV 
 
 On Windows, you may write something like this:
 
-`"C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe" -b --python ./blender_render.py -- --input "C:\Users\Wolf\Documents\NN_Output\BVH_files\mocap.bvh" --input_audio "C:\Users\Wolf\Documents\NN_Output\audio.wav" --video`
+`& "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe" -b --python ./blender_render.py -- --input "C:\Users\Wolf\Documents\NN_Output\BVH_files\mocap.bvh" --input_audio "C:\Users\Wolf\Documents\NN_Output\audio.wav" --video --output_dir "C:\Users\Wolf\Documents\NN_Output\Rendered\"`
 
-You can also specify a `--duration <frame count>` flag to render clips shorter than 3600 frames, for *faster testing*!
+Tip: Tweak `--duration <frame count>`, `--res_x <value>`, and `--res_y <value>`, to smaller values to decrease render time and speed up your testing.
 
 ## Replicating the GENEA Challenge 2022 visualizations
 The parameters in the enclosed `.env` file correspond to the those used for rendering the final evaluation stimuli of the GENEA Challenge 2022, for ease of replication. As long as you clone this repo, build it using Docker, and input the BVH files used for the final visualization, you should be able to reproduce the results. You could also use the [minimal release](https://github.com/TeoNikolov/genea_visualizer/releases/tag/minimal-release-v1) of the GENEA visualization tool directly with Blender, but maintaining the release is lower priority, and it may not reflect potential changes. It is preferable to use the Dockerized solution instead.

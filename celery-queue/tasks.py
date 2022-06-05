@@ -15,6 +15,7 @@ from pyvirtualdisplay import Display
 from bvh import Bvh
 import time
 import ffmpeg
+from pathlib import Path
 
 Display().start()
 
@@ -133,6 +134,7 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		
 	
 	output_file = None
+	output_dir = Path(tempfile.mkdtemp()) / "video"
 	with tempfile.NamedTemporaryFile(suffix=".bvh") as tmp_bvh:
 		tmp_bvh.write(bvh_file)
 		tmp_bvh.seek(0)
@@ -142,11 +144,19 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		script_args.append('--duration')
 		script_args.append(os.environ["RENDER_DURATION_FRAMES"])
 		script_args.append('--video')
+		script_args.append('--res_x')
+		script_args.append(os.environ["RENDER_RESOLUTION_X"])
+		script_args.append('--res_y')
+		script_args.append(os.environ["RENDER_RESOLUTION_Y"])
+		script_args.append('-o')
+		script_args.append(output_dir)
 		if rotate_flag is not None:
 			script_args.append('--rotate')
 			script_args.append(rotate_flag)
 		
 		output_file = call_blender_process(script_args)
+		output_file_l = output_file[0]
+		output_file_r = output_file[1]
 		if audio_file:
 			with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_wav:
 				tmp_wav.write(audio_file)

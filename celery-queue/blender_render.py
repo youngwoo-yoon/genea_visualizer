@@ -6,7 +6,6 @@ import random
 from mathutils import Vector
 import time
 import argparse
-import tempfile
 from pathlib import Path
 
 # cleans up the scene and memory
@@ -33,7 +32,7 @@ def clear_scene():
 	bpy.ops.sequencer.delete()
 	
 def setup_scene(cam_pos_FB, cam_pos_UB, cam_rot):
-    
+	
 	bpy.context.scene.render.use_multiview = True
 	bpy.context.scene.render.views_format = 'MULTIVIEW'
 
@@ -167,12 +166,12 @@ def load_audio(filepath):
 		frame_start=0
 	)
 	
-def render_video(output_dir, picture, video, bvh_fname, render_frame_start, render_frame_length):
+def render_video(output_dir, picture, video, bvh_fname, render_frame_start, render_frame_length, resX, resY):
 	bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'
 	bpy.context.scene.display.shading.light = 'MATCAP'
 	bpy.context.scene.display.render_aa = 'FXAA'
-	bpy.context.scene.render.resolution_x=int(os.environ["RENDER_RESOLUTION_X"])
-	bpy.context.scene.render.resolution_y=int(os.environ["RENDER_RESOLUTION_Y"])
+	bpy.context.scene.render.resolution_x=int(resX)
+	bpy.context.scene.render.resolution_y=int(resY)
 	bpy.context.scene.render.fps = 30
 	bpy.context.scene.frame_start = render_frame_start
 	bpy.context.scene.frame_set(render_frame_start)
@@ -199,31 +198,68 @@ def render_video(output_dir, picture, video, bvh_fname, render_frame_start, rend
 def parse_args():
 	parser = argparse.ArgumentParser(description="Some description.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	parser.add_argument('-i', '--input', help='Input file name of the BVH to render.', type=Path, required=True)
+	parser.add_argument('-o', '--output_dir', help='Output directory where the rendered video files will be saved to. Will use "<script directory/output/" if not specified.', type=Path)
 	parser.add_argument('-s', '--start', help='Which frame to start rendering from.', type=int, default=0)
 	parser.add_argument('-r', '--rotate', help='Rotates the character for better positioning in the video frame. Use "cw" for 90-degree clockwise, "ccw" for 90-degree counter-clockwise, "flip" for 180 degree rotation, or leave at "default" for no rotation.', choices=['default', 'cw', 'ccw', 'flip'], type=str, default="default")
 	parser.add_argument('-d', '--duration', help='How many consecutive frames to render.', type=int, default=0)
-	parser.add_argument('-a', '--input-audio', help='Input file name of an audio clip to include in the final render.', type=Path)
+	parser.add_argument('-a', '--input_audio', help='Input file name of an audio clip to include in the final render.', type=Path)
 	parser.add_argument('-p', '--png', action='store_true', help='Renders the result in a PNG-formatted image.')
 	parser.add_argument('-v', '--video', action='store_true', help='Renders the result in an MP4-formatted video.')
+	parser.add_argument('-rx', '--res_x', help='The horizontal resolution for the rendered videos.', type=int, default=1400)
+	parser.add_argument('-ry', '--res_y', help='The vertical resolution for the rendered videos.', type=int, default=1050)
 	argv = sys.argv
 	argv = argv[argv.index("--") + 1 :]
 	return vars(parser.parse_args(args=argv))
 
 def main():
-	args = parse_args()
+	IS_SERVER = "GENEA_SERVER" in os.environ
+	if IS_SERVER:
+		print('[INFO] Script is running inside a GENEA Docker environment.')
+		
+	if bpy.ops.text.run_script.poll():
+		print('[INFO] Script is running in Blender UI.')
+		SCRIPT_DIR = Path(bpy.context.space_data.text.filepath).parents[0]
+		##################################
+		##### SET ARGUMENTS MANUALLY #####
+		##### IF RUNNING BLENDER GUI #####
+		##################################
+		ARG_BVH_PATHNAME = os.path.join(SCRIPT_DIR, 'input_files', 'mocap.bvh')
+		ARG_AUDIO_FILE_NAME = os.path.join(SCRIPT_DIR, 'input_files', 'audio.wav') # set to None for no audio
+		ARG_IMAGE = False
+		ARG_VIDEO = True
+		ARG_START_FRAME = 0
+		ARG_DURATION_IN_FRAMES = 100
+		ARG_ROTATE = 'default'
+		ARG_RESOLUTION_X = 1400
+		ARG_RESOLUTION_Y = 1050
+		ARG_OUTPUT_DIR = (SCRIPT_DIR / 'output').resolve()
+	else:
+		print('[INFO] Script is running from command line.')
+		SCRIPT_DIR = Path(os.path.realpath(__file__)).parents[0]
+		# process arguments
+		args = parse_args()
+		ARG_BVH_PATHNAME = args['input'].resolve()
+		ARG_AUDIO_FILE_NAME = args['input_audio'].resolve() if args['input_audio'] is not None else None
+		ARG_IMAGE = args['png']
+		ARG_VIDEO = args['video'] # set to 'False' to get a quick image preview
+		ARG_START_FRAME = args['start']
+		ARG_DURATION_IN_FRAMES = args['duration']
+		ARG_ROTATE = args['rotate']
+		ARG_RESOLUTION_X = args['res_x']
+		ARG_RESOLUTION_Y = args['res_y']
+		ARG_OUTPUT_DIR = args['output_dir'].resolve() if args['output_dir'] is not None else (SCRIPT_DIR / "output").resolve()
+
 	# FBX file
-	curr_script_path = os.path.dirname(os.path.realpath(__file__))
-	output_dir = os.path.join(curr_script_path, 'output')
-	FBX_MODEL = os.path.join(curr_script_path, 'model', "GenevaModel_v2_Tpose_Final.fbx")
-	tmp_dir = Path(tempfile.mkdtemp()) / "video"	
-	BVH_NAME = os.path.basename(str(args['input'])).replace('.bvh','')
+
+	FBX_MODEL = os.path.join(SCRIPT_DIR, 'model', "GenevaModel_v2_Tpose_Final.fbx")
+	BVH_NAME = os.path.basename(ARG_BVH_PATHNAME).replace('.bvh','')
 
 	start = time.time()
 	
 	clear_scene()
 	load_fbx(FBX_MODEL)
-	add_materials(curr_script_path)
-	load_bvh(str(args['input']), args['rotate'], zerofy=True)
+	add_materials(SCRIPT_DIR)
+	load_bvh(str(ARG_BVH_PATHNAME), ARG_ROTATE, zerofy=True)
 	constraintBoneTargets(rig = BVH_NAME)
 
 	CAM_POS_FB = [0, -3, 1.1]
@@ -231,15 +267,16 @@ def main():
 	CAM_ROT = [math.radians(90), 0, 0]
 	setup_scene(CAM_POS_FB, CAM_POS_UB, CAM_ROT)
 	
-	if args['input_audio']:
-		load_audio(str(args['input_audio']))
+	# for sanity, audio is handled using FFMPEG on the server and the input_audio argument should be ignored
+	if ARG_AUDIO_FILE_NAME and not IS_SERVER:
+		load_audio(str(ARG_AUDIO_FILE_NAME))
 	
 	total_frames = bpy.data.objects[BVH_NAME].animation_data.action.frame_range.y
-	render_video(str(tmp_dir), args['png'], args['video'], BVH_NAME, args['start'], min(args['duration'], total_frames))
+	render_video(str(ARG_OUTPUT_DIR), ARG_IMAGE, ARG_VIDEO, BVH_NAME, ARG_START_FRAME, min(ARG_DURATION_IN_FRAMES, total_frames), ARG_RESOLUTION_X, ARG_RESOLUTION_Y)
 
 	end = time.time()
 	all_time = end - start
-	out_files = [str(x) for x in tmp_dir.glob("*.mp4")]
+	out_files = [str(x) for x in ARG_OUTPUT_DIR.glob("*.mp4")]
 	print("output_file", str(out_files), flush=True)
 	
 #Code line
