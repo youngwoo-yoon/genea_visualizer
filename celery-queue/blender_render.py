@@ -33,7 +33,7 @@ def clear_scene():
 	bpy.ops.sequencer.delete()
 	
 def setup_scene(cam_pos_FB, cam_pos_UB, cam_rot):
-
+    
 	bpy.context.scene.render.use_multiview = True
 	bpy.context.scene.render.views_format = 'MULTIVIEW'
 
@@ -211,7 +211,6 @@ def parse_args():
 
 def main():
 	args = parse_args()
-
 	# FBX file
 	curr_script_path = os.path.dirname(os.path.realpath(__file__))
 	output_dir = os.path.join(curr_script_path, 'output')

@@ -77,10 +77,9 @@ while not done:
 		print(response)
 		raise Exception("should not happen..")
 	time.sleep(5)
+
 output_file_1 = Path(str(bvh_file.stem) + '_UB').with_suffix(".mp4")
 output_file_2 = Path(str(bvh_file.stem) + '_FB').with_suffix(".mp4")
-print(output_file_1)
-print(output_file_2)
 video_1 = requests.get(server_url + file_url_1, headers=headers).content
 video_2 = requests.get(server_url + file_url_2, headers=headers).content
 output_file_1.write_bytes(video_1)
