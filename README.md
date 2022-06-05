@@ -25,7 +25,7 @@ This repository contains code that can be used to visualize BVH files (with opti
 
 - Server, hosted by the GENEA organizers at http://129.192.81.125/
 - Server, hosted locally by you using the files from this repository
-- Blender scripts, for working directly with your own Blender installation
+- Stand-alone, for using the supplied Blender script with an existing Blender installation
 
 For each BVH file, two videos are produced:
 
