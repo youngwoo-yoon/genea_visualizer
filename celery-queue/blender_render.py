@@ -271,6 +271,9 @@ def main():
 	if ARG_AUDIO_FILE_NAME and not IS_SERVER:
 		load_audio(str(ARG_AUDIO_FILE_NAME))
 	
+	if not os.path.exists(str(ARG_OUTPUT_DIR)):
+		os.mkdir(str(ARG_OUTPUT_DIR))
+	
 	total_frames = bpy.data.objects[BVH_NAME].animation_data.action.frame_range.y
 	render_video(str(ARG_OUTPUT_DIR), ARG_IMAGE, ARG_VIDEO, BVH_NAME, ARG_START_FRAME, min(ARG_DURATION_IN_FRAMES, total_frames), ARG_RESOLUTION_X, ARG_RESOLUTION_Y)
 

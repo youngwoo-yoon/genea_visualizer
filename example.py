@@ -81,6 +81,8 @@ while not done:
 	time.sleep(5)
 
 output_dir = args.output_dir.resolve() if args.output_dir is not None else Path(os.path.realpath(__file__)).parents[0] / "output"
+if not os.path.exists(output_dir):
+	os.mkdir(output_dir)
 output_file_1 = output_dir / Path(str(bvh_file.stem) + '_UB').with_suffix(".mp4")
 output_file_2 = output_dir / Path(str(bvh_file.stem) + '_FB').with_suffix(".mp4")
 video_1 = requests.get(server_url + file_url_1, headers=headers).content
