@@ -90,7 +90,7 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this:
 
-`python ./example.py <path to .BVH file> --audio_file <path tp .WAV file> --output <path to save videos to> --server_url <IP where the server is hosted>`
+`python ./example.py <path to .BVH file> --audio_file <path to .WAV file> --output <path to save videos to> --server_url <IP where the server is hosted>`
 
 **To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this:
 
