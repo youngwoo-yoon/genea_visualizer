@@ -9,6 +9,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
+import json
 
 import celery.states as states
 from celery import Celery
@@ -104,5 +105,8 @@ async def files(file_name, background_tasks: BackgroundTasks):
 
 
 @app.post("/upload_video", response_class=PlainTextResponse)
-async def upload_video(file: UploadFile = File(...)) -> str:
-	return await save_tmp_file(file)
+async def upload_video(file1: UploadFile = File(...), file2: UploadFile = File(...)) -> str:
+	file1_out = await save_tmp_file(file1)
+	file2_out = await save_tmp_file(file2)
+	files = [file1_out, file2_out]
+	return json.dumps({"files": [str(file) for file in files]})

@@ -8,13 +8,14 @@
 import requests
 from pathlib import Path
 import time
+import json
 
 import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("bvh_file", type=Path)
+# parser.add_argument("--server_url", default="http://129.192.81.125:80")
 parser.add_argument("--server_url", default="http://localhost:5001")
-parser.add_argument("--output", type=Path)
 parser.add_argument("--audio_file", help="The filepath to a chosen .wav audio file.", type=Path)
 parser.add_argument("--rotate", help='Set to "cw" to rotate avatar 90 degrees clockwise, "ccw" for 90 degrees counter-clockwise, "flip" for 180-degree rotation, and leave at "default" for no rotation (or ignore the flag).',type=str, choices=['default', 'cw', 'ccw', 'flip'], default='default')
 
@@ -23,7 +24,6 @@ args = parser.parse_args()
 server_url = args.server_url
 bvh_file = args.bvh_file
 audio_file = args.audio_file
-output = args.output if args.output else bvh_file.with_suffix(".mp4")
 
 headers = {"Authorization": "Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz"}
 
@@ -64,7 +64,9 @@ while not done:
 		print(f"Combining audio with video. Your video will be ready soon!")
 
 	elif response["state"] == "SUCCESS":
-		file_url = response["result"]
+		result = json.loads(response["result"])
+		file_url_1 = result['files'][0]
+		file_url_2 = result['files'][1]
 		done = True
 		print("Done!")
 		break
@@ -75,7 +77,11 @@ while not done:
 		print(response)
 		raise Exception("should not happen..")
 	time.sleep(5)
-
-
-video = requests.get(server_url + file_url, headers=headers).content
-output.write_bytes(video)
+output_file_1 = Path(str(bvh_file.stem) + '_UB').with_suffix(".mp4")
+output_file_2 = Path(str(bvh_file.stem) + '_FB').with_suffix(".mp4")
+print(output_file_1)
+print(output_file_2)
+video_1 = requests.get(server_url + file_url_1, headers=headers).content
+video_2 = requests.get(server_url + file_url_2, headers=headers).content
+output_file_1.write_bytes(video_1)
+output_file_2.write_bytes(video_2)

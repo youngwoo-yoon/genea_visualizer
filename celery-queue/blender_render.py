@@ -32,10 +32,22 @@ def clear_scene():
 	bpy.ops.sequencer.select_all(action='SELECT')
 	bpy.ops.sequencer.delete()
 	
-def setup_scene(cam_pos, cam_rot):
+def setup_scene(cam_pos_FB, cam_pos_UB, cam_rot):
+
+	bpy.context.scene.render.use_multiview = True
+	bpy.context.scene.render.views_format = 'MULTIVIEW'
+
 	# Camera
-	bpy.ops.object.camera_add(enter_editmode=False, location=cam_pos, rotation=cam_rot)
+	bpy.ops.object.camera_add(enter_editmode=False, location=cam_pos_FB, rotation=cam_rot)
 	cam = bpy.data.objects['Camera']
+	cam.name = 'Camera_L'
+	cam.scale = [20, 20, 20]
+	bpy.context.scene.camera = cam # add cam so it's rendered
+	
+	# Camera 2
+	bpy.ops.object.camera_add(enter_editmode=False, location=cam_pos_UB, rotation=cam_rot)
+	cam = bpy.data.objects['Camera']
+	cam.name = 'Camera_R'
 	cam.scale = [20, 20, 20]
 	bpy.context.scene.camera = cam # add cam so it's rendered
 	
@@ -133,7 +145,7 @@ def constraintBoneTargets(armature = 'Armature', rig = 'None'):
 		for c in bone.constraints:
 			bone.constraints.remove( c )
 		# Create body_world location to fix floating legs
-		if bone.name == 'body_world' and os.environ["VISUALIZATION_MODE"] != "1":
+		if bone.name == 'body_world':
 			constraint = bone.constraints.new('COPY_LOCATION')
 			constraint.target = bpy.context.scene.objects[rig]
 			temp = bone.name.replace('BVH:','')
@@ -199,9 +211,7 @@ def parse_args():
 
 def main():
 	args = parse_args()
-	if os.environ["VISUALIZATION_MODE"] not in ["0", "1"]:
-		raise NotImplementedError("This visualization mode is not supported ({})!".format(os.environ["VISUALIZATION_MODE"]))
-	
+
 	# FBX file
 	curr_script_path = os.path.dirname(os.path.realpath(__file__))
 	output_dir = os.path.join(curr_script_path, 'output')
@@ -217,10 +227,10 @@ def main():
 	load_bvh(str(args['input']), args['rotate'], zerofy=True)
 	constraintBoneTargets(rig = BVH_NAME)
 
-	if os.environ["VISUALIZATION_MODE"] == "0":		CAM_POS = [0, -3, 1.1]
-	elif os.environ["VISUALIZATION_MODE"] == "1":	CAM_POS = [0, -2.75, 1.25]
+	CAM_POS_FB = [0, -3, 1.1]
+	CAM_POS_UB = [0, -2.75, 1.25]
 	CAM_ROT = [math.radians(90), 0, 0]
-	setup_scene(CAM_POS, CAM_ROT)
+	setup_scene(CAM_POS_FB, CAM_POS_UB, CAM_ROT)
 	
 	if args['input_audio']:
 		load_audio(str(args['input_audio']))
@@ -230,7 +240,8 @@ def main():
 
 	end = time.time()
 	all_time = end - start
-	print("output_file", str(list(tmp_dir.glob("*"))[0]), flush=True)
+	out_files = [str(x) for x in tmp_dir.glob("*.mp4")]
+	print("output_file", str(out_files), flush=True)
 	
 #Code line
 main()

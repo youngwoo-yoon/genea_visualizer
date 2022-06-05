@@ -90,8 +90,11 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		
 		total = None
 		current_frame = None
+		print(process)
+		print(process.stdout.readlines)
+		print("BEFORE LOOP")
 		for line in process.stdout:
-			#print(line) # debug process prints
+			print(line) # debug process prints
 			line = line.decode("utf-8").strip()
 			if line.startswith("total_frames "):
 				_, total = line.split(" ")
@@ -100,8 +103,14 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 				*_, current_frame = line.split(" ")
 				current_frame = int(current_frame)
 			elif line.startswith("output_file"):
-				_, file_name = line.split(" ")
-				return file_name
+				print("LINE")
+				print(line)
+				_, file_name_l, file_name_r = line.split(" ")
+				print("OUTPUT FILE")
+				print(file_name_l.split("'")[1])
+				print(file_name_r.split("'")[1])
+				output_files = [file_name_l.split("'")[1], file_name_r.split("'")[1]]
+				return output_files
 			if total and current_frame:
 				self.update_state(
 					state="RENDERING", meta={"current": current_frame, "total": total}
@@ -150,12 +159,13 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 			with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_wav:
 				tmp_wav.write(audio_file)
 				tmp_wav.seek(0)
-				output_file = call_ffmpeg_process(output_file, tmp_wav.name, os.path.join(os.path.dirname(output_file),"combined_av.mp4"))
+				output_file_l = call_ffmpeg_process(output_file[0], tmp_wav.name, os.path.join(os.path.dirname(output_file[0]),"combined_av_l.mp4"))
+				output_file_r = call_ffmpeg_process(output_file[1], tmp_wav.name, os.path.join(os.path.dirname(output_file[1]),"combined_av_r.mp4"))
 
 	if output_file is None:
 		raise TaskFailure("Something went wrong... Not sure why.")
 		
-	files = {"file": (os.path.basename(output_file), open(output_file, "rb"))}
+	files = {"file1": (os.path.basename(output_file_l), open(output_file_l, "rb")), "file2": (os.path.basename(output_file_r), open(output_file_r, "rb"))}
 	return requests.post(
 		API_SERVER + "/upload_video", files=files, headers=HEADERS
 	).text
