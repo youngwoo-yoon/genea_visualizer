@@ -27,6 +27,11 @@ This repository contains code that can be used to visualize BVH files (with opti
 - Server, hosted locally by you using the files from this repository
 - Blender scripts, for working directly with your own Blender installation
 
+For each BVH file, two videos are produced:
+
+- full body : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
+- upper body : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
+
 ## Server Solution
 
 *Most of the information below is needed to set up the server yourself. If you just want to use the GENEA-hosted server, go [here](#examplepy).*
@@ -39,8 +44,9 @@ The Docker server consists of several containers which are launched together wit
 
 ### Limitations
 1. The visualizer currently **does not support ARM systems**, like Mac M1. The issue stems from an ongoing [bug in QEMU](https://gitlab.com/qemu-project/qemu/-/issues/750), an emulation engine integrated into Docker, which messes with one of Blender's libraries.
-2. You must install **Docker 20.10.14** (or later) on your machine.
-3. If passing an audio file with your HTTP request to the server, make sure the audio file is **equal or longer** than the video duration. The combining of video and audio streams uses the shortest stream, so a shorter audio will shorten the duration of the final video.
+2. For the server-based solution, you must install **Docker 20.10.14** (or later) on your machine.
+3. For the Blender script-based solution, you must install **Blender 2.93.9** on your machine. *Other versions are not guaranteed to work!*
+4. If passing an audio file with your HTTP request to the server, make sure the audio file is **equal or longer** than the video duration. The combining of video and audio streams uses the shortest stream, so a shorter audio will shorten the duration of the final video.
 
 If you encounter any issues with the server or visualizer, please file an Issue in the repo. I will do my best to address it as soon as possible :)
 
@@ -48,7 +54,7 @@ If you encounter any issues with the server or visualizer, please file an Issue 
 First you need to install docker-compose:
 `sudo apt  install docker-compose` (on Ubuntu)
 
-You might want to edit some of the default parameters, such as render resolution and fps, in the `.env` file. The variable `VISUALIZATION_MODE` switches between "full body" (whole avatar visible, except for feet) and "upper body" (more zoomed in, with hips 3D position fixed) camera modes, when set to `0` and `1` respectively.
+You might want to edit some of the default parameters, such as the render resolution, in the `.env` file.
 
 Then to start the server run `docker-compose up --build`
 
@@ -57,7 +63,7 @@ In order to run several (for example 3) workers (Blender renderers, which allows
 The `-d` flag can also be passed in order to run the server in the background. Logs can then be accessed by running `docker-compose logs -f`. Additionally it's possible to rebuild just the worker or API containers with minimal disruption in the running server by running for example `docker-compose up -d --no-deps --scale worker=2 --build worker`. This will rebuild the worker container and stop the old ones and start 2 new ones.
 
 ### Using the visualization server
-The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will receive a URL to a video file that you can download. Below are some examples using `curl` and in the file `example.py` there is a full python (3.7) example of how this can be used.
+The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will receive two video file URLs that you can download. Below are some examples using `curl` and in the file `example.py` there is a full python (3.7) example of how this can be used.
 
 Since the server is available publicly online, a simple authentication system is included – just pass in the token `j7HgTkwt24yKWfHPpFG3eoydJK6syAsz` with each request. This can be changed by modifying `USER_TOKEN` in `.env`.
 
@@ -83,7 +89,9 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this:
 
-`python ./example.py <path to .BVH file> --audio_file <path tp .WAV file> --output <path to output .MP4 file> --server_url <IP where the server is hosted>`
+`python ./example.py <path to .BVH file> --audio_file <path tp .WAV file> --server_url <IP where the server is hosted>`
+
+The output video files will be stored in the same folder as the script.
 
 **To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this:
 
