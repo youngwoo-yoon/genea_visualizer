@@ -88,11 +88,11 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 ### example.py
 
-For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this:
+For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this (on Windows):
 
 `python ./example.py <path to .BVH file> --audio_file <path to .WAV file> --output <path where videos will be saved> --server_url <IP where the server is hosted>`
 
-**To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this:
+**To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this (on Windows):
 
 `python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" --audio_file "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" --output "C:\Users\Wolf\Documents\NN_Output\Rendered\" --server_url http://129.192.81.125`
 
@@ -113,11 +113,11 @@ This repository provides a [minimal release](https://github.com/TeoNikolov/genea
 7. The rendered video will be output to the `output` directory, next to the script file.
 
 ### Using command line
-It is likely that your machine learning pipeline outputs a bunch of BVH and WAV files, such as during hyperparameter optimization. Instead of processing each BVH/WAV file pair separately through Blender's UI yourself, call Blender with [command line arguments](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html) like this:
+It is likely that your machine learning pipeline outputs a bunch of BVH and WAV files, such as during hyperparameter optimization. Instead of processing each BVH/WAV file pair separately through Blender's UI yourself, call Blender with [command line arguments](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html) like this (on Windows):
 
 `"<path to Blender executable>" -b --python "<path to Blender .py script>" -- --input "<path to BVH file>" --input_audio "<path to WAV file>" --video`
 
-On Windows, you may write something like this:
+On Windows, you may write something like this (on Windows):
 
 `& "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe" -b --python ./blender_render.py -- --input "C:\Users\Wolf\Documents\NN_Output\BVH_files\mocap.bvh" --input_audio "C:\Users\Wolf\Documents\NN_Output\audio.wav" --video --output_dir "C:\Users\Wolf\Documents\NN_Output\Rendered\"`
 
