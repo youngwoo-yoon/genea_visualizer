@@ -90,7 +90,7 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this (on Windows):
 
-`python ./example.py <path to .BVH file> --audio_file <path to .WAV file> --output <path where videos will be saved> --server_url <IP where the server is hosted>`
+`python ./example.py <path to .BVH file> --audio_file <path to .WAV file> --output <directory to save videos in> --server_url <IP where the server is hosted>`
 
 **To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this (on Windows):
 
@@ -100,22 +100,21 @@ Note: The solution currently does not support the manual setting of number of fr
 
 ## Blender Script
 
-This repository provides a [minimal release](https://github.com/TeoNikolov/genea_visualizer/releases/tag/minimal-release-v1) of the GENEA visualization tool, in the form of a Blender script that you can use directly with Blender through the command line or Blender's user interface. This release is useful if you have Blender installed on your system and you want to play around with the visualizer. Note that while the release should  behave the same as the final visualizer (i.e. the one used during evaluation), **it is possible that some of the code, or default settings, change** over the next few months. Because the maintenance of this script is lower priority, you might prefer to use the server-based solution (either GENEA-hosted or self-hosted) to avoid potentially outdated code.
+The Blender script used by the server can also be used directly inside Blender, either through a command line interface or Blender's user intarface. Using the script directly is useful if you have Blender installed on your system, and you want to play around with the visualizer.
 
 ### Using Blender UI
 
-1. Make sure you have `Blender 2.93.9` (other versions may work, but this is not guaranteed).
-2. Extract the .zip contents to a directory of your choice.
-3. Start `Blender` and navigate to the `Scripting` panel above the 3D viewport.
-4. In the panel on the right of the 3D viewport, press `Open` to navigate to the script directory and open `GENEA_script_wip.py`.
-5. Tweak the settings in `main()` on `line 200` , under the `if` statement - make sure to specify full paths for the BVH and WAV files, including the extension and drive label.
-6. When ready, run the script by pressing the "play" button at the top to render the scene (this can take a while, so try with fewer frames first).
-7. The rendered video will be output to the `output` directory, next to the script file.
+1. Make sure you have `Blender 2.93.9` installed (other versions may work, but this is *not guaranteed*).
+2. Start `Blender` and navigate to the `Scripting` panel above the 3D viewport.
+3. In the panel on the right of the 3D viewport, press `Open` to navigate to the `blender_render.py` script. This will be either inside `celery-queue` folder, or in the `stand-alone` folder inside the conveniently-packaged [release file]().
+4. Tweak the settings in `main()` below the comment block that reads "SET ARGUMENTS MANUALLY...". When specifying paths, make sure to include the full path including the drive label.
+5. When ready, run the script by pressing the "play" button at the top to render the scene (this can take a while, so try with fewer frames first).
+6. The rendered video will be saved to the `ARG_OUTPUT_DIR` directory (defaults to `output` contained in the same directory as the script file).
 
 ### Using command line
 It is likely that your machine learning pipeline outputs a bunch of BVH and WAV files, such as during hyperparameter optimization. Instead of processing each BVH/WAV file pair separately through Blender's UI yourself, call Blender with [command line arguments](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html) like this (on Windows):
 
-`"<path to Blender executable>" -b --python "<path to Blender .py script>" -- --input "<path to BVH file>" --input_audio "<path to WAV file>" --video`
+`"<path to Blender executable>" -b --python "<path to 'blender_render.py' script>" -- --input "<path to BVH file>" --input_audio "<path to WAV file>" --video --output_dir <directory to save files in>`
 
 On Windows, you may write something like this (on Windows):
 
