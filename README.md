@@ -27,14 +27,14 @@ This repository contains code that can be used to visualize BVH files (with opti
 - Server, hosted locally by you using the files from this repository
 - Stand-alone, for using the supplied Blender script with an existing Blender installation
 
-For each BVH file, two videos are produced:
+Each BVH file can be visualized in one of two ways:
 
 - full body : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
 - upper body : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
 
 ## Server Solution
 
-*Most of the information below is needed to set up the server yourself. If you just want to use the GENEA-hosted server, go [here](#examplepy).*
+*Most of the information below is needed to set up the server yourself. If you just want to use the GENEA-hosted server, scroll to [here](#examplepy).*
 
 The Docker server consists of several containers which are launched together with the `docker-compose` command described below. The containers are:
 * web: this is an HTTP server which receives render requests and places them on a "celery" queue to be processed.
@@ -63,13 +63,9 @@ In order to run several (for example 3) workers (Blender renderers, which allows
 The `-d` flag can also be passed in order to run the server in the background. Logs can then be accessed by running `docker-compose logs -f`. Additionally it's possible to rebuild just the worker or API containers with minimal disruption in the running server by running for example `docker-compose up -d --no-deps --scale worker=2 --build worker`. This will rebuild the worker container and stop the old ones and start 2 new ones.
 
 ### Using the visualization server
-The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will receive two video file URLs that you can download. Below are some examples using `curl` and in the file `example.py` there is a full python (3.7) example of how this can be used.
+The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you a URL to the video file, which you can download. Below are some examples using `curl`, and the [example.py](#examplepy) file contains a full python (3.7) example of how this can be used.
 
 Since the server is available publicly online, a simple authentication system is included – just pass in the token `j7HgTkwt24yKWfHPpFG3eoydJK6syAsz` with each request. This can be changed by modifying `USER_TOKEN` in `.env`.
-
-For a simple usage example, you can see a full python script in `example.py`.
-
-Otherwise, you can follow the detailed instructions on how to use the visualization server provided below.
 
 Depending on where you host the visualization, `SERVER_URL` might be different. If you just are running it locally on your machine you can use `127.0.0.1` but otherwise you would use the ip address to the machine that is hosting the server.
 
@@ -90,11 +86,11 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this (on Windows):
 
-`python ./example.py <path to .BVH file> --audio_file <path to .WAV file> --output <directory to save videos in> --server_url <IP where the server is hosted>`
+`python ./example.py <path to .BVH file> -a <path to .WAV file> -o <path to save .MP4 file to> -m <visualization mode> -s <IP where the server is hosted>`
 
 **To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this (on Windows):
 
-`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" --audio_file "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" --output "C:\Users\Wolf\Documents\NN_Output\Rendered\" --server_url http://129.192.81.125`
+`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" -a "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" -o "C:\Users\Wolf\Documents\NN_Output\Rendered\video.mp4" -m "full_body" -s http://129.192.81.125`
 
 Note: The solution currently does not support the manual setting of number of frames to render from the client (`example.py`). Instead, make sure your BVH file is as long as you need it to, since this is what will get rendered by the server (capped at 2 minutes or 3600 frames).
 
@@ -107,7 +103,7 @@ The Blender script used by the server can also be used directly inside Blender, 
 1. Make sure you have `Blender 2.93.9` installed (other versions may work, but this is *not guaranteed*).
 2. Start `Blender` and navigate to the `Scripting` panel above the 3D viewport.
 3. In the panel on the right of the 3D viewport, press `Open` to navigate to the `blender_render.py` script. This will be either inside `celery-queue` folder, or in the `stand-alone` folder inside the conveniently-packaged [release file]().
-4. Tweak the settings in `main()` below the comment block that reads "SET ARGUMENTS MANUALLY...". When specifying paths, make sure to include the full path including the drive label.
+4. Tweak the settings in `main()` below the comment block that reads "SET ARGUMENTS MANUALLY...".
 5. When ready, run the script by pressing the "play" button at the top to render the scene (this can take a while, so try with fewer frames first).
 6. The rendered video will be saved to the `ARG_OUTPUT_DIR` directory (defaults to `output` contained in the same directory as the script file).
 
