@@ -216,9 +216,9 @@ def main():
 		ARG_BVH_PATHNAME = SCRIPT_DIR / 'session30_take5_hasFingers_shallow26_scale_local_30fps_3k.bvh'
 		ARG_AUDIO_FILE_NAME = SCRIPT_DIR / 'take5_shallow26.wav' # set to None for no audio
 		ARG_IMAGE = False
-		ARG_VIDEO = False
+		ARG_VIDEO = True
 		ARG_START_FRAME = 0
-		ARG_DURATION_IN_FRAMES = 100
+		ARG_DURATION_IN_FRAMES = 3600
 		ARG_ROTATE = 'default'
 		ARG_RESOLUTION_X = 1024
 		ARG_RESOLUTION_Y = 768
