@@ -193,6 +193,7 @@ def parse_args():
 	parser.add_argument('-a', '--input-audio', help='Input file name of an audio clip to include in the final render.', type=Path)
 	parser.add_argument('-p', '--png', action='store_true', help='Renders the result in a PNG-formatted image.')
 	parser.add_argument('-v', '--video', action='store_true', help='Renders the result in an MP4-formatted video.')
+	parser.add_argument('-m', "--visualization_mode", help='The visualization mode to use for rendering.',type=str, choices=['full_body', 'upper_body'], default='full_body')
 	argv = sys.argv
 	argv = argv[argv.index("--") + 1 :]
 	return vars(parser.parse_args(args=argv))

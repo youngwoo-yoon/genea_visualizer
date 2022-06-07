@@ -13,10 +13,11 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("bvh_file", type=Path)
+parser.add_argument('-m', "--visualization_mode", help='The visualization mode to use for rendering.',type=str, choices=['full_body', 'upper_body'], default='full_body', required=True)
 parser.add_argument("--server_url", default="http://localhost:5001")
 parser.add_argument("--output", type=Path)
 parser.add_argument("--audio_file", help="The filepath to a chosen .wav audio file.", type=Path)
-parser.add_argument("--rotate", help='Set to "cw" to rotate avatar 90 degrees clockwise, "ccw" for 90 degrees counter-clockwise, "flip" for 180-degree rotation, and leave at "default" for no rotation (or ignore the flag).',type=str, choices=['default', 'cw', 'ccw', 'flip'], default='default')
+parser.add_argument("--rotate", help='Set to "cw" to rotate avatar 90 degrees clockwise, "ccw" for 90 degrees counter-clockwise, "flip" for 180-degree rotation, and leave at "default" for no rotation (or ignore the flag).', type=str, choices=['default', 'cw', 'ccw', 'flip'], default='default')
 
 args = parser.parse_args()
 
@@ -31,14 +32,22 @@ files = {"bvh_file": (bvh_file.name, bvh_file.open())}
 if audio_file:
 	files['audio_file'] = (audio_file.name, audio_file.open('rb'))
 
-req_data = {'p_rotate': args.rotate}
+req_data = {'p_rotate': args.rotate, 'visualization_mode': args.visualization_mode}
 
-render_request = requests.post(
-	f"{server_url}/render",
-	params=req_data,
-	files=files,
-	headers=headers,
-)
+try:
+	print("Connecting to server...")
+	render_request = requests.post(
+		f"{server_url}/render",
+		params=req_data,
+		files=files,
+		headers=headers,
+		timeout=10
+	)
+except requests.Timeout:
+	print("The request to the server timed out. Either the supplied server URL ({}) is incorrect, your firewall/router settings are blocking traffic between your system and the server, or the server is down.".format(args.server_url))
+	exit()
+
+print("Got response from server.")
 job_uri = render_request.text
 
 done = False

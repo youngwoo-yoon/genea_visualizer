@@ -65,12 +65,12 @@ async def authorize(request: Request, call_next):
 
 
 @app.post("/render", response_class=PlainTextResponse)
-async def render(p_rotate: Optional[str], background_tasks: BackgroundTasks, bvh_file: UploadFile = File(...), audio_file: Optional[UploadFile] = File(None)):
+async def render(p_rotate: str, visualization_mode: str, background_tasks: BackgroundTasks, bvh_file: UploadFile = File(...), audio_file: Optional[UploadFile] = File(None)):
 	bvh_file_uri = await save_tmp_file(bvh_file)
 	audio_file_uri = None
 	if audio_file is not None:
 		audio_file_uri = await save_tmp_file(audio_file)
-	task = celery_workers.send_task("tasks.render", args=[bvh_file_uri, audio_file_uri, p_rotate], kwargs={})
+	task = celery_workers.send_task("tasks.render", args=[bvh_file_uri, audio_file_uri, p_rotate, visualization_mode], kwargs={})
 	background_tasks.add_task(remove_old_tmp_files)
 	return f"/jobid/{task.id}"
 
