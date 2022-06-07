@@ -190,7 +190,7 @@ def parse_args():
 	parser.add_argument('-o', '--output_dir', help='Output directory where the rendered video files will be saved to. Will use "<script directory/output/" if not specified.', type=Path)
 	parser.add_argument('-s', '--start', help='Which frame to start rendering from.', type=int, default=0)
 	parser.add_argument('-r', '--rotate', help='Rotates the character for better positioning in the video frame. Use "cw" for 90-degree clockwise, "ccw" for 90-degree counter-clockwise, "flip" for 180 degree rotation, or leave at "default" for no rotation.', choices=['default', 'cw', 'ccw', 'flip'], type=str, default="default")
-	parser.add_argument('-d', '--duration', help='How many consecutive frames to render.', type=int, default=0)
+	parser.add_argument('-d', '--duration', help='How many consecutive frames to render.', type=int, default=3600)
 	parser.add_argument('-a', '--input_audio', help='Input file name of an audio clip to include in the final render.', type=Path)
 	parser.add_argument('-p', '--png', action='store_true', help='Renders the result in a PNG-formatted image.')
 	parser.add_argument('-v', '--video', action='store_true', help='Renders the result in an MP4-formatted video.')
