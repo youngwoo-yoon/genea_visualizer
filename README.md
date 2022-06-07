@@ -27,14 +27,14 @@ This repository contains code that can be used to visualize BVH files (with opti
 - Server, hosted locally by you using the files from this repository
 - Stand-alone, for using the supplied Blender script with an existing Blender installation
 
-For each BVH file, two videos are produced:
+Each BVH file can be visualized in one of two ways:
 
-- full body : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
-- upper body : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
+- `full_body` : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
+- `upper_body` : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
 
 ## Server Solution
 
-*Most of the information below is needed to set up the server yourself. If you just want to use the GENEA-hosted server, go [here](#examplepy).*
+*Most of the information below is needed to set up the server yourself. If you just want to use the GENEA-hosted server, scroll to [here](#examplepy).*
 
 The Docker server consists of several containers which are launched together with the `docker-compose` command described below. The containers are:
 * web: this is an HTTP server which receives render requests and places them on a "celery" queue to be processed.
@@ -63,24 +63,20 @@ In order to run several (for example 3) workers (Blender renderers, which allows
 The `-d` flag can also be passed in order to run the server in the background. Logs can then be accessed by running `docker-compose logs -f`. Additionally it's possible to rebuild just the worker or API containers with minimal disruption in the running server by running for example `docker-compose up -d --no-deps --scale worker=2 --build worker`. This will rebuild the worker container and stop the old ones and start 2 new ones.
 
 ### Using the visualization server
-The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will receive two video file URLs that you can download. Below are some examples using `curl` and in the file `example.py` there is a full python (3.7) example of how this can be used.
+The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will get a URL to the video file, which you can download. Below are some examples using `curl`, and the [example.py](#examplepy) file contains a full python (3.7) example of how this can be used.
 
 Since the server is available publicly online, a simple authentication system is included – just pass in the token `j7HgTkwt24yKWfHPpFG3eoydJK6syAsz` with each request. This can be changed by modifying `USER_TOKEN` in `.env`.
 
-For a simple usage example, you can see a full python script in `example.py`.
-
-Otherwise, you can follow the detailed instructions on how to use the visualization server provided below.
-
 Depending on where you host the visualization, `SERVER_URL` might be different. If you just are running it locally on your machine you can use `127.0.0.1` but otherwise you would use the ip address to the machine that is hosting the server.
 
-```curl -XPOST -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" -F "file=@/path/to/bvh/file.bvh" http://SERVER_URL/render``` 
+```curl -XPOST -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" -F "p_rotate=default" -F "visualization_mode=full_body OR upper_body" -F "file=@/path/to/bvh/file.bvh" http://SERVER_URL/render``` 
 will return a URI to the current job `/jobid/[JOB_ID]`.
 
 `curl -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" http://SERVER_URL/jobid/[JOB_ID]` will return the current job state, which might be any of:
 * `{result": {"jobs_in_queue": X}, "state": "PENDING"}`: Which means the job is in the queue and waiting to be rendered. The `jobs_in_queue` property is the total number of jobs waiting to be executed. The order of job execution is not guaranteed, which means that this number does not reflect how many jobs there are before the current job, but rather reflects if the server is currently busy or not.
-* `{result": null, "state": "PROCESSING"}`: The job is currently being processed. Depending on the file size this might take a while, but this acknowledges that the server has started to working on the request.
-* `{result":{"current": X, "total": Y}, "state": "RENDERING"}`: The job is currently being rendered, this is the last stage of the process. `current` shows which is the last rendered frame and `total` shows how many frames in total this job will render.
-* `{result": null, "state": "COMBINING A/V"}`: The job is currently combining video and audio streams. This can occur only if an audio file was passed to the server alongside the BVH file.
+* `{result": null, "state": "PROCESSING"}`: The job is currently being processed. Depending on the file size this might take a while, but this acknowledges that the server has started to work on the request.
+* `{result":{"current": X, "total": Y}, "state": "RENDERING"}`: The job is currently being rendered. Here, `current` shows which is the last rendered frame and `total` shows how many frames in total this job will render.
+* `{result": null, "state": "COMBINING A/V"}`: The job is currently combining video and audio streams. This can occur only if an audio file was passed to the server alongside the BVH file. This is usually fast.
 * `{"result": FILE_URL, "state": "SUCCESS"}`: The job ended successfully and the video is available at `http://SERVER_URL/[FILE_URL]`.
 * `{"result": ERROR_MSG, "state": "FAILURE"}`: The job ended with a failure and the error message is given in `results`.
 
@@ -90,11 +86,11 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this (on Windows):
 
-`python ./example.py <path to .BVH file> --audio_file <path to .WAV file> --output <directory to save videos in> --server_url <IP where the server is hosted>`
+`python ./example.py <path to .BVH file> -a <path to .WAV file> -o <path to save .MP4 file to> -m <visualization mode> -s <IP where the server is hosted>`
 
 **To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this (on Windows):
 
-`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" --audio_file "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" --output "C:\Users\Wolf\Documents\NN_Output\Rendered\" --server_url http://129.192.81.125`
+`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" -a "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" -o "C:\Users\Wolf\Documents\NN_Output\Rendered\video.mp4" -m "full_body" -s http://129.192.81.125`
 
 Note: The solution currently does not support the manual setting of number of frames to render from the client (`example.py`). Instead, make sure your BVH file is as long as you need it to, since this is what will get rendered by the server (capped at 2 minutes or 3600 frames).
 
@@ -106,21 +102,21 @@ The Blender script used by the server can also be used directly inside Blender, 
 
 1. Make sure you have `Blender 2.93.9` installed (other versions may work, but this is *not guaranteed*).
 2. Start `Blender` and navigate to the `Scripting` panel above the 3D viewport.
-3. In the panel on the right of the 3D viewport, press `Open` to navigate to the `blender_render.py` script. This will be either inside `celery-queue` folder, or in the `stand-alone` folder inside the conveniently-packaged [release file]().
-4. Tweak the settings in `main()` below the comment block that reads "SET ARGUMENTS MANUALLY...". When specifying paths, make sure to include the full path including the drive label.
+3. In the panel on the right of the 3D viewport, press `Open` to navigate to the `blender_render.py` script. This script is found inside the `celery-queue` folder.
+4. Tweak the settings in `main()` below the comment block that reads "SET ARGUMENTS MANUALLY...".
 5. When ready, run the script by pressing the "play" button at the top to render the scene (this can take a while, so try with fewer frames first).
-6. The rendered video will be saved to the `ARG_OUTPUT_DIR` directory (defaults to `output` contained in the same directory as the script file).
+6. The rendered video will be saved to the `ARG_OUTPUT_DIR` directory (defaults to the same folder as the BVH file).
 
 ### Using command line
 It is likely that your machine learning pipeline outputs a bunch of BVH and WAV files, such as during hyperparameter optimization. Instead of processing each BVH/WAV file pair separately through Blender's UI yourself, call Blender with [command line arguments](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html) like this (on Windows):
 
-`"<path to Blender executable>" -b --python "<path to 'blender_render.py' script>" -- --input "<path to BVH file>" --input_audio "<path to WAV file>" --video --output_dir <directory to save files in>`
+`"<path to Blender executable>" -b --python "<path to 'blender_render.py' script>" -- -i "<path to BVH file>" -a "<path to WAV file>" -v -o <directory to save MP4 video in> -m <visualization mode>`
 
 On Windows, you may write something like this (on Windows):
 
-`& "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe" -b --python ./blender_render.py -- --input "C:\Users\Wolf\Documents\NN_Output\BVH_files\mocap.bvh" --input_audio "C:\Users\Wolf\Documents\NN_Output\audio.wav" --video --output_dir "C:\Users\Wolf\Documents\NN_Output\Rendered\"`
+`& "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe" -b --python ./blender_render.py -- -i "C:\Users\Wolf\Documents\NN_Output\BVH_files\mocap.bvh" -a "C:\Users\Wolf\Documents\NN_Output\audio.wav" -v -o "C:\Users\Wolf\Documents\NN_Output\Rendered\" -m "full_body"`
 
 Tip: Tweak `--duration <frame count>`, `--res_x <value>`, and `--res_y <value>`, to smaller values to decrease render time and speed up your testing.
 
 ## Replicating the GENEA Challenge 2022 visualizations
-The parameters in the enclosed `.env` file correspond to the those used for rendering the final evaluation stimuli of the GENEA Challenge 2022, for ease of replication. As long as you clone this repo, build it using Docker, and input the BVH files used for the final visualization, you should be able to reproduce the results. You could also use the [minimal release](https://github.com/TeoNikolov/genea_visualizer/releases/tag/minimal-release-v1) of the GENEA visualization tool directly with Blender, but maintaining the release is lower priority, and it may not reflect potential changes. It is preferable to use the Dockerized solution instead.
+The parameters in the enclosed `.env` file correspond to the those used for rendering the final evaluation stimuli of the GENEA Challenge 2022, for ease of replication. As long as you clone this repo, build it using Docker, and input the BVH files used for the final visualization, you should be able to reproduce the results.
