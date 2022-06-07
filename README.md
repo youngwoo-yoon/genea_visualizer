@@ -27,7 +27,7 @@ This repository contains code that can be used to visualize BVH files (with opti
 - Server, hosted locally by you using the files from this repository
 - Stand-alone, for using the supplied Blender script with an existing Blender installation
 
-Each BVH file can be visualized in one of two ways:
+Each BVH file can be visualized in one of two **visualization modes**:
 
 - `full_body` : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
 - `upper_body` : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
