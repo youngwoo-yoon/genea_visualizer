@@ -12,7 +12,7 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('bvh_file", type=Path)
+parser.add_argument('bvh_file', type=Path)
 parser.add_argument('-m', "--visualization_mode", help='The visualization mode to use for rendering.',type=str, choices=['full_body', 'upper_body'], default='full_body', required=True)
 parser.add_argument('-s', '--server_url', default="http://localhost:5001")
 parser.add_argument('-a', '--audio_file', help="The filepath to a chosen .wav audio file.", type=Path)
