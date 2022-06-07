@@ -17,6 +17,7 @@ services:
       - redis
   worker:
     environment: 
+      - GENEA_SERVER=${GENEA_SERVER}
       - SYSTEM_TOKEN=${SYSTEM_TOKEN}
       - API_SERVER=http://web:${INTERNAL_API_PORT}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}

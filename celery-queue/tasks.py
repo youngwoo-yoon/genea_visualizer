@@ -131,6 +131,7 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str, visua
 		
 	
 	output_file = None
+	output_dir = Path(tempfile.mkdtemp()) / "video"
 	with tempfile.NamedTemporaryFile(suffix=".bvh") as tmp_bvh:
 		tmp_bvh.write(bvh_file)
 		tmp_bvh.seek(0)
@@ -140,6 +141,12 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str, visua
 		script_args.append('--duration')
 		script_args.append(os.environ["RENDER_DURATION_FRAMES"])
 		script_args.append('--video')
+		script_args.append('--res_x')
+		script_args.append(os.environ["RENDER_RESOLUTION_X"])
+		script_args.append('--res_y')
+		script_args.append(os.environ["RENDER_RESOLUTION_Y"])
+		script_args.append('-o')
+		script_args.append(output_dir)
 		script_args.append('--visualization_mode')
 		script_args.append(visualization_mode)
 		if rotate_flag is not None:
