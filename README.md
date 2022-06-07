@@ -29,8 +29,8 @@ This repository contains code that can be used to visualize BVH files (with opti
 
 Each BVH file can be visualized in one of two ways:
 
-- full body : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
-- upper body : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
+- `full_body` : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
+- `upper_body` : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
 
 ## Server Solution
 
@@ -63,20 +63,20 @@ In order to run several (for example 3) workers (Blender renderers, which allows
 The `-d` flag can also be passed in order to run the server in the background. Logs can then be accessed by running `docker-compose logs -f`. Additionally it's possible to rebuild just the worker or API containers with minimal disruption in the running server by running for example `docker-compose up -d --no-deps --scale worker=2 --build worker`. This will rebuild the worker container and stop the old ones and start 2 new ones.
 
 ### Using the visualization server
-The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you a URL to the video file, which you can download. Below are some examples using `curl`, and the [example.py](#examplepy) file contains a full python (3.7) example of how this can be used.
+The server is HTTP-based and works by uploading a bvh file, and optionally audio. You will then receive a "job id" which you can poll in order to see the progress of your rendering. When it is finished, you will get a URL to the video file, which you can download. Below are some examples using `curl`, and the [example.py](#examplepy) file contains a full python (3.7) example of how this can be used.
 
 Since the server is available publicly online, a simple authentication system is included – just pass in the token `j7HgTkwt24yKWfHPpFG3eoydJK6syAsz` with each request. This can be changed by modifying `USER_TOKEN` in `.env`.
 
 Depending on where you host the visualization, `SERVER_URL` might be different. If you just are running it locally on your machine you can use `127.0.0.1` but otherwise you would use the ip address to the machine that is hosting the server.
 
-```curl -XPOST -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" -F "file=@/path/to/bvh/file.bvh" http://SERVER_URL/render``` 
+```curl -XPOST -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" -F "p_rotate=default" -F "visualization_mode=full_body OR upper_body" -F "file=@/path/to/bvh/file.bvh" http://SERVER_URL/render``` 
 will return a URI to the current job `/jobid/[JOB_ID]`.
 
 `curl -H "Authorization:Bearer j7HgTkwt24yKWfHPpFG3eoydJK6syAsz" http://SERVER_URL/jobid/[JOB_ID]` will return the current job state, which might be any of:
 * `{result": {"jobs_in_queue": X}, "state": "PENDING"}`: Which means the job is in the queue and waiting to be rendered. The `jobs_in_queue` property is the total number of jobs waiting to be executed. The order of job execution is not guaranteed, which means that this number does not reflect how many jobs there are before the current job, but rather reflects if the server is currently busy or not.
-* `{result": null, "state": "PROCESSING"}`: The job is currently being processed. Depending on the file size this might take a while, but this acknowledges that the server has started to working on the request.
-* `{result":{"current": X, "total": Y}, "state": "RENDERING"}`: The job is currently being rendered, this is the last stage of the process. `current` shows which is the last rendered frame and `total` shows how many frames in total this job will render.
-* `{result": null, "state": "COMBINING A/V"}`: The job is currently combining video and audio streams. This can occur only if an audio file was passed to the server alongside the BVH file.
+* `{result": null, "state": "PROCESSING"}`: The job is currently being processed. Depending on the file size this might take a while, but this acknowledges that the server has started to work on the request.
+* `{result":{"current": X, "total": Y}, "state": "RENDERING"}`: The job is currently being rendered. Here, `current` shows which is the last rendered frame and `total` shows how many frames in total this job will render.
+* `{result": null, "state": "COMBINING A/V"}`: The job is currently combining video and audio streams. This can occur only if an audio file was passed to the server alongside the BVH file. This is usually fast.
 * `{"result": FILE_URL, "state": "SUCCESS"}`: The job ended successfully and the video is available at `http://SERVER_URL/[FILE_URL]`.
 * `{"result": ERROR_MSG, "state": "FAILURE"}`: The job ended with a failure and the error message is given in `results`.
 
@@ -102,19 +102,19 @@ The Blender script used by the server can also be used directly inside Blender, 
 
 1. Make sure you have `Blender 2.93.9` installed (other versions may work, but this is *not guaranteed*).
 2. Start `Blender` and navigate to the `Scripting` panel above the 3D viewport.
-3. In the panel on the right of the 3D viewport, press `Open` to navigate to the `blender_render.py` script. This will be either inside `celery-queue` folder, or in the `stand-alone` folder inside the conveniently-packaged [release file]().
+3. In the panel on the right of the 3D viewport, press `Open` to navigate to the `blender_render.py` script. This script is found inside the `celery-queue` folder.
 4. Tweak the settings in `main()` below the comment block that reads "SET ARGUMENTS MANUALLY...".
 5. When ready, run the script by pressing the "play" button at the top to render the scene (this can take a while, so try with fewer frames first).
-6. The rendered video will be saved to the `ARG_OUTPUT_DIR` directory (defaults to `output` contained in the same directory as the script file).
+6. The rendered video will be saved to the `ARG_OUTPUT_DIR` directory (defaults to the same folder as the BVH file).
 
 ### Using command line
 It is likely that your machine learning pipeline outputs a bunch of BVH and WAV files, such as during hyperparameter optimization. Instead of processing each BVH/WAV file pair separately through Blender's UI yourself, call Blender with [command line arguments](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html) like this (on Windows):
 
-`"<path to Blender executable>" -b --python "<path to 'blender_render.py' script>" -- --input "<path to BVH file>" --input_audio "<path to WAV file>" --video --output_dir <directory to save files in>`
+`"<path to Blender executable>" -b --python "<path to 'blender_render.py' script>" -- -i "<path to BVH file>" -a "<path to WAV file>" -v -o <directory to save MP4 video in> -m <visualization mode>`
 
 On Windows, you may write something like this (on Windows):
 
-`& "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe" -b --python ./blender_render.py -- --input "C:\Users\Wolf\Documents\NN_Output\BVH_files\mocap.bvh" --input_audio "C:\Users\Wolf\Documents\NN_Output\audio.wav" --video --output_dir "C:\Users\Wolf\Documents\NN_Output\Rendered\"`
+`& "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe" -b --python ./blender_render.py -- -i "C:\Users\Wolf\Documents\NN_Output\BVH_files\mocap.bvh" -a "C:\Users\Wolf\Documents\NN_Output\audio.wav" -v -o "C:\Users\Wolf\Documents\NN_Output\Rendered\" -m "full_body"`
 
 Tip: Tweak `--duration <frame count>`, `--res_x <value>`, and `--res_y <value>`, to smaller values to decrease render time and speed up your testing.
 
