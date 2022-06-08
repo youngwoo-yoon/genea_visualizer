@@ -258,7 +258,7 @@ def main():
 	constraintBoneTargets(rig = BVH_NAME, mode = ARG_MODE)
 
 	if ARG_MODE == "full_body": 	CAM_POS = [0, -3, 1.1]
-	elif ARG_MODE == "upper_body":  CAM_POS = [0, -2.75, 1.25]
+	elif ARG_MODE == "upper_body":  CAM_POS = [0, -2.45, 1.3]
 	CAM_ROT = [math.radians(90), 0, 0]
 	setup_scene(CAM_POS, CAM_ROT)
 	
