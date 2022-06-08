@@ -23,7 +23,7 @@
 
 This repository contains code that can be used to visualize BVH files (with optional audio) using Docker, Blender, and FFMPEG. The code was developed for the [GENEA Challenge 2022](https://genea-workshop.github.io/2022/), and enables reproducing the visualizations used for the challenge stimuli on most platforms. The system integrates Docker and Blender to provide a free and easy-to-use solution that requires as little manual setup as possible. Currently, we provide three interfaces that you can use to access the visualizations:
 
-- Server, hosted by the GENEA organizers at http://129.192.81.125/
+- Server, hosted by the GENEA organizers at http://129.192.81.237/
 - Server, hosted locally by you using the files from this repository
 - Stand-alone, for using the supplied Blender script with an existing Blender installation
 
@@ -84,13 +84,13 @@ In order to retrieve the video, run `curl -H "Authorization:Bearer j7HgTkwt24yKW
 
 ### example.py
 
-For the GENEA-hosted server at http://129.192.81.125/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this (on Windows):
+For the GENEA-hosted server at http://129.192.81.237/, the majority of the steps above have been done already. All you need to do is to contact the server and send your own files for rendering. The included `example.py` file provides an example for doing so, which you can call with a command like this (on Windows):
 
 `python ./example.py <path to .BVH file> -a <path to .WAV file> -o <path to save .MP4 file to> -m <visualization mode> -s <IP where the server is hosted>`
 
 **To contact the GENEA-hosted server**, and render a BVH file with audio, you may write a command like this (on Windows):
 
-`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" -a "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" -o "C:\Users\Wolf\Documents\NN_Output\Rendered\video.mp4" -m "full_body" -s http://129.192.81.125`
+`python ./example.py "C:\Users\Wolf\Documents\NN_Output\BVH_Files\mocap.bvh" -a "C:\Users\Wolf\Documents\NN_Output\WAV_Files\audio.wav" -o "C:\Users\Wolf\Documents\NN_Output\Rendered\video.mp4" -m "full_body" -s http://129.192.81.237`
 
 Note: The solution currently does not support the manual setting of number of frames to render from the client (`example.py`). Instead, make sure your BVH file is as long as you need it to, since this is what will get rendered by the server (capped at 2 minutes or 3600 frames).
 
