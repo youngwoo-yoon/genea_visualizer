@@ -30,7 +30,7 @@ This repository contains code that can be used to visualize BVH files (with opti
 Each BVH file can be visualized in one of two **visualization modes**:
 
 - `full_body` : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
-- `upper_body` : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
+- `upper_body` : the avatar body is visible from above the knees to the head, zoomed in, with fixed position and rotation for the hips and legs
 
 When using the server/script, make sure to specify the visualization mode *exactly as formatted above*, in order to choose which visualization more you want to render for.
 
