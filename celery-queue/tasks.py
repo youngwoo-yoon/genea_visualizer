@@ -15,6 +15,7 @@ from pyvirtualdisplay import Display
 from bvh import Bvh
 import time
 import ffmpeg
+from pathlib import Path
 
 Display().start()
 
@@ -62,9 +63,8 @@ def validate_bvh_file(bvh_file):
 			f"The supplied frame time ({mocap.frame_time}) differs from the required {FRAME_TIME} (+/- {FRAME_EPSILON})"
 		)
 
-
 @celery.task(name="tasks.render", bind=True, hard_time_limit=WORKER_TIMEOUT)
-def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> str:
+def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str, visualization_mode: str) -> str:
 	HEADERS = {"Authorization": f"Bearer " + os.environ["SYSTEM_TOKEN"]}
 	API_SERVER = os.environ["API_SERVER"]
 
@@ -132,6 +132,7 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		
 	
 	output_file = None
+	output_dir = Path(tempfile.mkdtemp()) / "video"
 	with tempfile.NamedTemporaryFile(suffix=".bvh") as tmp_bvh:
 		tmp_bvh.write(bvh_file)
 		tmp_bvh.seek(0)
@@ -141,6 +142,14 @@ def render(self, bvh_file_uri: str, audio_file_uri: str, rotate_flag: str) -> st
 		script_args.append('--duration')
 		script_args.append(os.environ["RENDER_DURATION_FRAMES"])
 		script_args.append('--video')
+		script_args.append('--res_x')
+		script_args.append(os.environ["RENDER_RESOLUTION_X"])
+		script_args.append('--res_y')
+		script_args.append(os.environ["RENDER_RESOLUTION_Y"])
+		script_args.append('-o')
+		script_args.append(output_dir)
+		script_args.append('--visualization_mode')
+		script_args.append(visualization_mode)
 		if rotate_flag is not None:
 			script_args.append('--rotate')
 			script_args.append(rotate_flag)
