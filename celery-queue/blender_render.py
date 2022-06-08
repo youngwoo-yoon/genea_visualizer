@@ -144,6 +144,12 @@ def constraintBoneTargets(armature = 'Armature', rig = 'None', mode = 'full_body
 			constraint.target = bpy.context.scene.objects[rig]
 			temp = bone.name.replace('BVH:','')
 			constraint.subtarget = temp
+	if mode == 'upper_body':
+		bpy.context.object.pose.bones["b_root"].constraints["Copy Rotation"].mute = True
+		bpy.context.object.pose.bones["b_r_upleg"].constraints["Copy Rotation"].mute = True
+		bpy.context.object.pose.bones["b_r_leg"].constraints["Copy Rotation"].mute = True
+		bpy.context.object.pose.bones["b_l_upleg"].constraints["Copy Rotation"].mute = True
+		bpy.context.object.pose.bones["b_l_leg"].constraints["Copy Rotation"].mute = True
 	bpy.ops.object.mode_set(mode='OBJECT')
 	
 def load_audio(filepath):
