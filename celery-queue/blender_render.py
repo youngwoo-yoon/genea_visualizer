@@ -213,16 +213,16 @@ def main():
 		##### SET ARGUMENTS MANUALLY #####
 		##### IF RUNNING BLENDER GUI #####
 		##################################
-		ARG_BVH_PATHNAME = SCRIPT_DIR / 'session30_take5_hasFingers_shallow26_scale_local_30fps_3k.bvh'
+		ARG_BVH_PATHNAME = SCRIPT_DIR / 'session30_take5_hasFingers_shallow26_scale_local_30fps_3.6k.bvh'
 		ARG_AUDIO_FILE_NAME = SCRIPT_DIR / 'take5_shallow26.wav' # set to None for no audio
 		ARG_IMAGE = False
-		ARG_VIDEO = True
+		ARG_VIDEO = False
 		ARG_START_FRAME = 0
 		ARG_DURATION_IN_FRAMES = 3600
 		ARG_ROTATE = 'default'
 		ARG_RESOLUTION_X = 1024
 		ARG_RESOLUTION_Y = 768
-		ARG_MODE = 'full_body'
+		ARG_MODE = 'upper_body'
 		ARG_OUTPUT_DIR = ARG_BVH_PATHNAME.parents[0]
 	else:
 		print('[INFO] Script is running from command line.')
@@ -258,7 +258,7 @@ def main():
 	constraintBoneTargets(rig = BVH_NAME, mode = ARG_MODE)
 
 	if ARG_MODE == "full_body": 	CAM_POS = [0, -3, 1.1]
-	elif ARG_MODE == "upper_body":  CAM_POS = [0, -2.75, 1.25]
+	elif ARG_MODE == "upper_body":  CAM_POS = [0, -2.45, 1.31]
 	CAM_ROT = [math.radians(90), 0, 0]
 	setup_scene(CAM_POS, CAM_ROT)
 	
