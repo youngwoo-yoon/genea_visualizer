@@ -32,6 +32,8 @@ Each BVH file can be visualized in one of two **visualization modes**:
 - `full_body` : the avatar body is visible from below the knees to the head, with the original animation data left unchanged
 - `upper_body` : the avatar body is visible from above the knees to the head, slightly zoomed in, and the hips position locked at (0,0) with its height left unchanged
 
+When using the server/script, make sure to specify the visualization mode *exactly as formatted above*, in order to choose which visualization more you want to render for.
+
 ## Server Solution
 
 *Most of the information below is needed to set up the server yourself. If you just want to use the GENEA-hosted server, scroll to [here](#examplepy).*
